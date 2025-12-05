@@ -12,6 +12,14 @@ class BaseConfig:
     API_TITLE = "Gestion Academica API"
     API_VERSION = "v1"
     DEFAULT_PAGE_SIZE = 20
+    CACHE_TYPE = "RedisCache"
+    CACHE_DEFAULT_TIMEOUT = 60
+    CACHE_REDIS_URL = os.getenv("GESTION_REDIS_URL", "redis://localhost:6379/0")
+    RATELIMIT_DEFAULT = os.getenv("GESTION_RATE_LIMIT", "60 per minute")
+    RATELIMIT_STORAGE_URI = CACHE_REDIS_URL
+    DOCUMENTACION_BASE_URL = os.getenv("DOCUMENTACION_BASE_URL", "http://localhost:5001")
+    CIRCUIT_MAX_FAILURES = int(os.getenv("GESTION_CIRCUIT_MAX_FAILURES", "3"))
+    CIRCUIT_RESET_TIMEOUT = int(os.getenv("GESTION_CIRCUIT_RESET_TIMEOUT", "30"))
 
     @staticmethod
     def init_app(app):
@@ -29,6 +37,8 @@ class DevelopmentConfig(BaseConfig):
 
 class TestingConfig(BaseConfig):
     TESTING = True
+    CACHE_TYPE = "SimpleCache"
+    RATELIMIT_STORAGE_URI = "memory://"
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "GESTION_TEST_DATABASE_URI",
         "sqlite:///:memory:",

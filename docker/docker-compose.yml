@@ -1,4 +1,9 @@
 services:
+  gestion-redis:
+    image: redis:7-alpine
+    networks:
+      - sysacad_net
+
   gestion-db:
     image: postgres:16-alpine
     environment:
@@ -27,6 +32,7 @@ services:
       HASHIDS_MIN_LENGTH: ${HASHIDS_MIN_LENGTH}
       HASHIDS_ALPHABET: ${HASHIDS_ALPHABET}
     depends_on:
+      - gestion-redis
       - gestion-db
     ports:
       - 5002:5000

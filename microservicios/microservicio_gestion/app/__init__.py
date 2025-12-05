@@ -2,7 +2,7 @@ import os
 from flask import Flask
 
 from .config import config_by_name
-from .extensions import db, migrate, ma, hashids
+from .extensions import db, migrate, ma, hashids, cache, limiter
 from .resources import register_blueprints
 
 
@@ -18,6 +18,8 @@ def create_app(config_name: str | None = None) -> Flask:
     migrate.init_app(app, db)
     ma.init_app(app)
     hashids.init_app(app)
+    cache.init_app(app)
+    limiter.init_app(app)
 
     register_blueprints(app)
 

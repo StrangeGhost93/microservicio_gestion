@@ -1,0 +1,32 @@
+import sys
+from pathlib import Path
+
+import pytest
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app import create_app
+from app.integrations.documentacion_client import DocumentacionClient
+
+
+@pytest.fixture
+def app():
+    app = create_app("testing")
+    ctx = app.app_context()
+    ctx.push()
+    yield app
+    ctx.pop()
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+
+@pytest.fixture(autouse=True)
+def reset_documentacion_breaker():
+    DocumentacionClient._breaker = None
+    yield
+    DocumentacionClient._breaker = None

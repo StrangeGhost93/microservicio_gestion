@@ -1,1 +1,0 @@
-from .document_generator import get_document_generator

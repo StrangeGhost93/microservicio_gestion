@@ -1,6 +1,6 @@
 # PROYECTO-SYSACAD
 
-**Integrantes:** Juan Destéfano, Occhipinti Julián y Santiago Bruno.
+**Integrantes:** Juan Destéfano y Occhipinti Julián.
 
 Este proyecto fue realizado con la ayuda de GitHub Copilot, ChatGPT y DeepSeek.
 

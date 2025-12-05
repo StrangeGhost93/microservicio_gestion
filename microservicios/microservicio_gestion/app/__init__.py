@@ -30,3 +30,7 @@ def create_app(config_name: str | None = None) -> Flask:
         return exported
 
     return app
+
+
+# Alias compatible con gunicorn cuando se apunta a "app:app"
+app = create_app()

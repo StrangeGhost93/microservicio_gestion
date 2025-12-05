@@ -6,38 +6,38 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class BaseConfig:
-    SECRET_KEY = os.getenv("PLANIFICACION_SECRET_KEY", "change-me")
+    SECRET_KEY = os.getenv("GESTION_SECRET_KEY", "change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JSON_SORT_KEYS = False
-    API_TITLE = "Planificación Académica API"
+    API_TITLE = "Gestion Academica API"
     API_VERSION = "v1"
     DEFAULT_PAGE_SIZE = 20
 
     @staticmethod
     def init_app(app):
         """Hook para configurar logs u otras extensiones."""
-        app.logger.setLevel(os.getenv("PLANIFICACION_LOG_LEVEL", "INFO"))
+        app.logger.setLevel(os.getenv("GESTION_LOG_LEVEL", "INFO"))
 
 
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "PLANIFICACION_DEV_DATABASE_URI",
-        f"sqlite:///{BASE_DIR / 'planificacion_dev.db'}",
+        "GESTION_DEV_DATABASE_URI",
+        f"sqlite:///{BASE_DIR / 'gestion_dev.db'}",
     )
 
 
 class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "PLANIFICACION_TEST_DATABASE_URI",
+        "GESTION_TEST_DATABASE_URI",
         "sqlite:///:memory:",
     )
 
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.getenv("PLANIFICACION_DATABASE_URI")
+    SQLALCHEMY_DATABASE_URI = os.getenv("GESTION_DATABASE_URI")
 
 
 config_by_name = {

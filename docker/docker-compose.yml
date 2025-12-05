@@ -1,33 +1,33 @@
 services:
-  planificacion-db:
+  gestion-db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${PLANIFICACION_DB_NAME}
-      POSTGRES_USER: ${PLANIFICACION_DB_USER}
-      POSTGRES_PASSWORD: ${PLANIFICACION_DB_PASSWORD}
+      POSTGRES_DB: ${GESTION_DB_NAME}
+      POSTGRES_USER: ${GESTION_DB_USER}
+      POSTGRES_PASSWORD: ${GESTION_DB_PASSWORD}
     volumes:
-      - planificacion_db_data:/var/lib/postgresql/data
+      - gestion_db_data:/var/lib/postgresql/data
     networks:
       - sysacad_net
 
-  planificacion:
+  gestion:
     build:
-      context: ../microservicios/planificacion
+      context: ../microservicios/microservicio_gestion
       dockerfile: Dockerfile
-    image: planificacion-ms:v1.0.0
+    image: gestion-ms:v1.0.0
     env_file:
       - .env
     environment:
-      FLASK_ENV: ${PLANIFICACION_FLASK_ENV}
-      PLANIFICACION_SECRET_KEY: ${PLANIFICACION_SECRET_KEY}
-      PLANIFICACION_DEV_DATABASE_URI: ${PLANIFICACION_DEV_DATABASE_URI}
-      PLANIFICACION_TEST_DATABASE_URI: ${PLANIFICACION_TEST_DATABASE_URI}
-      PLANIFICACION_DATABASE_URI: ${PLANIFICACION_DATABASE_URI}
+      FLASK_ENV: ${GESTION_FLASK_ENV}
+      GESTION_SECRET_KEY: ${GESTION_SECRET_KEY}
+      GESTION_DEV_DATABASE_URI: ${GESTION_DEV_DATABASE_URI}
+      GESTION_TEST_DATABASE_URI: ${GESTION_TEST_DATABASE_URI}
+      GESTION_DATABASE_URI: ${GESTION_DATABASE_URI}
       HASHIDS_SALT: ${HASHIDS_SALT}
       HASHIDS_MIN_LENGTH: ${HASHIDS_MIN_LENGTH}
       HASHIDS_ALPHABET: ${HASHIDS_ALPHABET}
     depends_on:
-      - planificacion-db
+      - gestion-db
     ports:
       - 5002:5000
     networks:
@@ -46,7 +46,7 @@ services:
 
   alumno:
     build:
-      context: ../microservicio_alumno
+      context: ../../microservicio_alumno
       dockerfile: Dockerfile
     env_file:
       - .env
@@ -84,7 +84,7 @@ services:
 
   documentacion:
     build:
-      context: ../microservicio_documentacion
+      context: ../../microservicio_documentacion
       dockerfile: Dockerfile
     env_file:
       - .env
@@ -128,6 +128,6 @@ networks:
     driver: bridge
 
 volumes:
-  planificacion_db_data:
+  gestion_db_data:
   alumno_db_data:
   documentacion_db_data:

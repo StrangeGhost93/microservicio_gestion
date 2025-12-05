@@ -1,6 +1,15 @@
-SQLALCHEMY_TRACK_MODIFICATIONS = False
-SQLALCHEMY_RECORD_QUERIES = True
-TEST_DATABASE_URI='postgresql+psycopg2://usuario:password@localhost:5432/TEST_SYSACAD'
-TEST_DATABASE_URI=postgresql://Occhi890:contraseña@localhost:5432/TEST_SYSACAD
+SQLALCHEMY_TRACK_MODIFICATIONS=False
+SQLALCHEMY_RECORD_QUERIES=True
 DEV_DATABASE_URI='postgresql+psycopg2://usuario:password@localhost:5432/DEV_SYSACAD'
+TEST_DATABASE_URI='postgresql+psycopg2://usuario:password@localhost:5432/TEST_SYSACAD'
 PROD_DATABASE_URI='postgresql://usuario:password@localhost:5432/SYSACAD'
+
+# Microservicio de Planificación
+PLANIFICACION_FLASK_ENV=development
+PLANIFICACION_SECRET_KEY=super-secret-key
+PLANIFICACION_DEV_DATABASE_URI=sqlite:///planificacion_dev.db
+PLANIFICACION_TEST_DATABASE_URI=sqlite:///:memory:
+PLANIFICACION_DATABASE_URI='postgresql://usuario:password@localhost:5432/PLANIFICACION_SYSACAD'
+HASHIDS_SALT=cambia-esta-sal
+HASHIDS_MIN_LENGTH=10
+HASHIDS_ALPHABET=abcdefghijklmnopqrstuvwxyz1234567890

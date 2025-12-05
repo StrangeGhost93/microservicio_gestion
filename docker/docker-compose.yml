@@ -1,15 +1,133 @@
 services:
-    estructura:
-        image: flask-sysacad:v1.0.0
-        networks:
-          - mired
-        ports:
-          - 5000:5000
-        environment:
-          - FLASK_CONTEXT=${FLASK_CONTEXT}
-          - SQLALCHEMY_TRACK_MODIFICATIONS=${SQLALCHEMY_TRACK_MODIFICATIONS}  
-          - SQLALCHEMY_RECORD_QUERIES=${SQLALCHEMY_RECORD_QUERIES}
-          - PROD_DATABASE_URI=${PROD_DATABASE_URI}
+  planificacion-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${PLANIFICACION_DB_NAME}
+      POSTGRES_USER: ${PLANIFICACION_DB_USER}
+      POSTGRES_PASSWORD: ${PLANIFICACION_DB_PASSWORD}
+    volumes:
+      - planificacion_db_data:/var/lib/postgresql/data
+    networks:
+      - sysacad_net
+
+  planificacion:
+    build:
+      context: ../microservicios/planificacion
+      dockerfile: Dockerfile
+    image: planificacion-ms:v1.0.0
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: ${PLANIFICACION_FLASK_ENV}
+      PLANIFICACION_SECRET_KEY: ${PLANIFICACION_SECRET_KEY}
+      PLANIFICACION_DEV_DATABASE_URI: ${PLANIFICACION_DEV_DATABASE_URI}
+      PLANIFICACION_TEST_DATABASE_URI: ${PLANIFICACION_TEST_DATABASE_URI}
+      PLANIFICACION_DATABASE_URI: ${PLANIFICACION_DATABASE_URI}
+      HASHIDS_SALT: ${HASHIDS_SALT}
+      HASHIDS_MIN_LENGTH: ${HASHIDS_MIN_LENGTH}
+      HASHIDS_ALPHABET: ${HASHIDS_ALPHABET}
+    depends_on:
+      - planificacion-db
+    ports:
+      - 5002:5000
+    networks:
+      - sysacad_net
+
+  alumno-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${ALUMNO_DB_NAME}
+      POSTGRES_USER: ${ALUMNO_DB_USER}
+      POSTGRES_PASSWORD: ${ALUMNO_DB_PASSWORD}
+    volumes:
+      - alumno_db_data:/var/lib/postgresql/data
+    networks:
+      - sysacad_net
+
+  alumno:
+    build:
+      context: ../microservicio_alumno
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      SECRET_KEY: ${ALUMNO_SECRET_KEY}
+      DEBUG: ${ALUMNO_DEBUG}
+      ALLOWED_HOSTS: ${ALUMNO_ALLOWED_HOSTS}
+      POSTGRES_DB: ${ALUMNO_DB_NAME}
+      POSTGRES_USER: ${ALUMNO_DB_USER}
+      POSTGRES_PASSWORD: ${ALUMNO_DB_PASSWORD}
+      DATABASE_HOST: alumno-db
+      DATABASE_PORT: 5432
+    depends_on:
+      - alumno-db
+    ports:
+      - 8000:8000
+    networks:
+      - sysacad_net
+
+  documentacion-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DOCUMENTACION_DB_NAME}
+      POSTGRES_USER: ${DOCUMENTACION_DB_USER}
+      POSTGRES_PASSWORD: ${DOCUMENTACION_DB_PASSWORD}
+    volumes:
+      - documentacion_db_data:/var/lib/postgresql/data
+    networks:
+      - sysacad_net
+
+  documentacion-redis:
+    image: redis:7-alpine
+    networks:
+      - sysacad_net
+
+  documentacion:
+    build:
+      context: ../microservicio_documentacion
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      FLASK_CONTEXT: ${DOCUMENTACION_FLASK_CONTEXT}
+      SECRET_KEY: ${DOCUMENTACION_SECRET_KEY}
+      DEV_DATABASE_URI: ${DOCUMENTACION_DEV_DATABASE_URI}
+      TEST_DATABASE_URI: ${DOCUMENTACION_TEST_DATABASE_URI}
+      PROD_DATABASE_URI: ${DOCUMENTACION_PROD_DATABASE_URI}
+      HASHIDS_SALT: ${DOCUMENTACION_HASHIDS_SALT}
+      HASHIDS_MIN_LENGTH: ${DOCUMENTACION_HASHIDS_MIN_LENGTH}
+      HASHIDS_ALPHABET: ${DOCUMENTACION_HASHIDS_ALPHABET}
+      REDIS_HOST: documentacion-redis
+      REDIS_PORT: ${DOCUMENTACION_REDIS_PORT}
+      REDIS_DB: ${DOCUMENTACION_REDIS_DB}
+      REDIS_PASSWORD: ${DOCUMENTACION_REDIS_PASSWORD}
+    depends_on:
+      - documentacion-db
+      - documentacion-redis
+    ports:
+      - 5001:5000
+    networks:
+      - sysacad_net
+
+  estructura:
+    image: flask-sysacad:v1.0.0
+    env_file:
+      - .env
+    environment:
+      FLASK_CONTEXT: ${FLASK_CONTEXT}
+      SQLALCHEMY_TRACK_MODIFICATIONS: ${SQLALCHEMY_TRACK_MODIFICATIONS}
+      SQLALCHEMY_RECORD_QUERIES: ${SQLALCHEMY_RECORD_QUERIES}
+      PROD_DATABASE_URI: ${PROD_DATABASE_URI}
+    ports:
+      - 5000:5000
+    networks:
+      - sysacad_net
+
 networks:
-    mired:
-        external: true
+  sysacad_net:
+    driver: bridge
+
+volumes:
+  planificacion_db_data:
+  alumno_db_data:
+  documentacion_db_data:

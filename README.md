@@ -86,3 +86,37 @@ python -m unittest test.test_facultad
 source env_name/bin/activate
 python -m unittest test.test_facultad
 ```
+
+## 🧩 Microservicios del proyecto
+
+### Planificación Académica
+- El código fuente vive dentro de `microservicios/planificacion` y comparte dependencias mediante su propio `requirements.txt`.
+- Para ejecutarlo de forma local: `cd microservicios/planificacion`, creá un virtualenv (`python -m venv .venv`), instalá dependencias (`pip install -r requirements.txt`), copiá `.env.example` a `.env` y levantá `flask run --port 5002` o `python app.py`.
+- Para levantarlo junto al resto del ecosistema usá el `docker-compose.yml` de `docker/`: `cd docker && cp .env-example .env && docker compose up planificacion`. Ese compose también permite levantar `estructura` y cualquier otro servicio conectado a la red `sysacad_net`.
+- Las variables necesarias (`PLANIFICACION_*`, `HASHIDS_*`, etc.) ahora figuran tanto en el `env-example` de la raíz como en el `docker/.env-example` para que completes tus credenciales una sola vez.
+
+### Levantar todo el ecosistema (Alumno + Documentación + Planificación)
+
+1. Asegurate de tener los tres repositorios clonados como carpetas hermanas:
+   - `Desarrollo de software Parcial 2/` (este repo, contiene `docker/`)
+   - `../microservicio_alumno/`
+   - `../microservicio_documentacion/`
+2. Desde `Desarrollo de software Parcial 2/docker/` copiá las variables ejemplo:
+   ```powershell
+   cd docker
+   Copy-Item .env-example .env
+   ```
+   Editá `.env` con las credenciales reales de cada microservicio (PostgreSQL, Redis, claves secretas, etc.).
+3. Construí y levantá los contenedores necesarios:
+   ```powershell
+   docker compose up --build planificacion alumno documentacion
+   ```
+   Se expondrán los puertos: `estructura` 5000, `documentacion` 5001, `planificacion` 5002 y `alumno` 8000.
+4. Ejecutá las migraciones y seeds desde los contenedores (solo la primera vez):
+   ```powershell
+   docker compose exec planificacion flask db upgrade
+   docker compose exec alumno python manage.py migrate
+   docker compose exec documentacion flask db upgrade
+   docker compose exec documentacion python poblar_db.py   # Opcional, llena datos de ejemplo
+   ```
+5. Probá la comunicación entre microservicios usando las URLs internas (`http://planificacion:5000`, `http://alumno:8000`, `http://documentacion:5000`) o los puertos publicados hacia tu host.

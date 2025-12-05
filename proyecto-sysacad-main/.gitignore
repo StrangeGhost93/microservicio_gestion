@@ -1,0 +1,49 @@
+# Entornos virtuales (locales)
+.venv/
+venv/
+env/
+env_name/
+.gral_env/
+environments/
+.env
+*.env
+
+# Entorno virtual global
+%USERPROFILE%/environments/
+environmentsgral/
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.cpython-*
+
+# Configuración de editores de código
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs y archivos temporales
+*.log
+*.tmp
+*.swp
+*.bak
+
+# Archivos de bases de datos locales
+*.sqlite3
+
+# Docker
+*.tar
+*.pid
+docker-compose.override.yml
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Compilados o builds
+dist/
+build/
+*.egg-info/

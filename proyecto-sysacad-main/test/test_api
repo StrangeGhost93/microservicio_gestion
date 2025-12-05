@@ -1,0 +1,10 @@
+import unittest
+from flask import current_app
+from app import create_app
+from app.models import Facultad
+import os
+
+def test_index(self):
+    client = self.app.test_client(use_cookies=True)
+    response = client.get('http://localhost:5000/api/v1/')
+    self.assertEqual(response.status.code, 200)

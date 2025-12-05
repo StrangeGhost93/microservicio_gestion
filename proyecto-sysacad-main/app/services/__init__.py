@@ -1,0 +1,1 @@
+from app.services.facultad_service import FacultadService

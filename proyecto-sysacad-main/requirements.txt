@@ -1,0 +1,10 @@
+Flask==3.1.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.1.0
+SQLAlchemy==2.0.40
+psycopg2==2.9.10
+psycopg[binary]
+python-dotenv==1.1.0
+flask-migrate==4.1.0
+weasyprint[visual]==61.0
+MarkupSafe==3.0.2

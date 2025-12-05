@@ -69,6 +69,11 @@ microservicios/microservicio_gestion/
 | `FLASK_ENV` | `development` / `production` |
 | `GESTION_*_DATABASE_URI` | URIs por entorno |
 | `GESTION_SECRET_KEY` | Firmado de sesiones JWT/CSRF |
+| `GESTION_REDIS_URL` | Cache + rate limiting (ej. `redis://localhost:6379/0`) |
+| `GESTION_RATE_LIMIT` | Límite por defecto de solicitudes (p. ej. `60 per minute`) |
+| `DOCUMENTACION_BASE_URL` | URL base para el microservicio de documentación |
+| `GESTION_CIRCUIT_MAX_FAILURES` | Fallos consecutivos antes de abrir el circuito |
+| `GESTION_CIRCUIT_RESET_TIMEOUT` | Tiempo (s) para reintentar tras circuito abierto |
 | `HASHIDS_*` | Parámetros para ofuscar IDs |
 
 ## Endpoints principales (`/api/v1`)
@@ -83,6 +88,7 @@ microservicios/microservicio_gestion/
 | POST | `/cohortes` | Crear nueva cohorte |
 | POST | `/cohortes/<hashid>/docentes` | Asignar docente a módulo + cohorte |
 | CRUD | `/docentes` | Alta/baja/modificación de docentes |
+| GET | `/integraciones/documentacion/status` | Consulta resiliente al MS de documentación |
 
 > Todos los cuerpos aceptan/retornan JSON y validan estructura mediante Marshmallow. Los listados soportan filtros opcionales (`vigente`, `programa`, `estado`, `especialidad`).
 
@@ -100,6 +106,29 @@ microservicios/microservicio_gestion/
 - Suma autenticación (JWT u OIDC) envolviendo los blueprints con decoradores.
 - Implementa reportes agregados (horas planificadas por docente, ocupación de cohortes) en nuevos servicios/recursos.
 - Añade pruebas unitarias en `tests/` aprovechando la configuración `TestingConfig`.
+
+## Resiliencia operativa
+
+- **Caching + rate limiting**: Los listados de programas utilizan `Flask-Caching` respaldado por Redis y `Flask-Limiter` para evitar abusos; los cambios (POST/PUT/DELETE) invalidan la caché automáticamente.
+- **Circuit breaker + retry**: El `DocumentacionClient` usa `pybreaker` y `tenacity` para invocar `microservicio_documentacion` sin saturarlo; si se abre el circuito el endpoint de integraciones retorna 503 degradado.
+- **Integración observable**: `GET /api/v1/integraciones/documentacion/status` expone el estado de la dependencia externa para dashboards o health checks compuestos.
+- **Configuración moldeable**: Todos los parámetros de resiliencia (timeouts, límites, Redis URL) viven en el `.env` para ajustarlos por entorno sin tocar código.
+
+## Pruebas automatizadas
+
+El microservicio cuenta con una batería de pruebas `pytest` que cubre:
+
+- Cliente resilient (`DocumentacionClient`) ante respuestas OK, fallos HTTP y circuit breaker.
+- Endpoint de integraciones para propagar el estado remoto.
+- Parsing de filtros y cacheo en `program_resource`.
+
+Ejecución recomendada desde la raíz del repo:
+
+```powershell
+python -m pytest microservicios/microservicio_gestion/tests
+```
+
+La `TestingConfig` utiliza `SimpleCache` y un backend de rate limiting en memoria, por lo que no es necesario tener Redis corriendo para los tests unitarios.
 
 ## Docker
 

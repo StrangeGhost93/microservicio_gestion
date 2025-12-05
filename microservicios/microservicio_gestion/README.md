@@ -1,6 +1,6 @@
 # Microservicio de Gestión Académica
 
-Servicio Flask pensado para centralizar la planificación anual de programas ejecutivos, módulos, cohortes y asignaciones docentes del ecosistema SYSACAD. Complementa a los microservicios existentes de alumnos/documentación enfocándose en **qué** se dicta, **cuándo** y **con quién**.
+Microservicio Flask responsable de la gestión académica (programas, módulos, cohortes y asignaciones docentes) dentro del ecosistema SYSACAD. Trabaja en conjunto con `microservicio_alumno` (alta/baja de estudiantes) y `microservicio_documentacion` (certificados y documentación oficial) exponiendo APIs REST que los demás servicios consumen para saber **qué** se dicta, **cuándo** y **con quién**.
 
 ## Características principales
 
@@ -26,7 +26,7 @@ Servicio Flask pensado para centralizar la planificación anual de programas eje
 ## Estructura de carpetas
 
 ```
-microservicios/microservicios_gestion/
+microservicios/microservicio_gestion/
 ├── app/
 │   ├── __init__.py           # Factory y registro de extensiones
 │   ├── config.py             # Configuración por entorno
@@ -45,7 +45,7 @@ microservicios/microservicios_gestion/
 
 ## Configuración
 
-1. Clonar el proyecto base y ubicarse en `microservicios/microservicios_gestion`.
+1. Clonar el proyecto base y ubicarse en `microservicios/microservicio_gestion`.
 2. Crear entorno virtual e instalar dependencias:
    ```powershell
    python -m venv .venv
@@ -110,8 +110,51 @@ docker run -p 5002:5000 --env-file .env gestion-ms
 
 Esto levanta Gunicorn serveando `app:app` listo para integrarse via `docker-compose` junto al resto del ecosistema SYSACAD.
 
-## Integración en el monorepo
+## Orquestación con el resto de los microservicios
 
-- Dentro del repositorio principal reside en `microservicios/microservicios_gestion` y se incluye en `docker/docker-compose.yml` como servicio `gestion`.
-- Podés levantarlo junto con los demás microservicios ejecutando `docker compose up gestion` desde la carpeta `docker/` (o `docker compose up` para toda la pila).
-- Todas las variables necesarias se documentan en los archivos `env-example` de la raíz y de `docker/`; copiá esos archivos a `.env` y completá tus credenciales antes de construir las imágenes.
+El árbol raíz (`Desarrollo de software Parcial 2/`) incluye un `docker/docker-compose.yml` capaz de levantar esta API junto a `microservicio_alumno` y `microservicio_documentacion`. Requisitos:
+
+1. Tener las carpetas hermanas clonadas:
+   - `Desarrollo de software Parcial 2/microservicios/microservicio_gestion`
+   - `../microservicio_alumno`
+   - `../microservicio_documentacion`
+2. Copiar los archivos de entorno y completar credenciales reales:
+   ```powershell
+   cd docker
+   Copy-Item .env-example .env
+   ```
+3. Levantar la pila completa:
+   ```powershell
+   docker compose up --build gestion alumno documentacion
+   ```
+4. Ejecutar migraciones dentro de cada contenedor una sola vez:
+   ```powershell
+   docker compose exec gestion flask db upgrade
+   docker compose exec alumno python manage.py migrate
+   docker compose exec documentacion flask db upgrade
+   ```
+
+| Servicio                | Puerto expuesto | Uso principal                                   |
+|-------------------------|-----------------|--------------------------------------------------|
+| `gestion`               | 5002 → 5000     | Programas, módulos, cohortes y docentes          |
+| `documentacion`         | 5001 → 5000     | Generación de certificados y documentos oficiales|
+| `alumno`                | 8000 → 8000     | Gestión de alumnos, planes y entidades académicas|
+| `estructura` (monolito) | 5000 → 5000     | API histórica SYSACAD                            |
+
+Todos los servicios comparten la red `sysacad_net`, por lo que pueden comunicarse mediante hostnames (`http://gestion:5000/api/v1/programas`, `http://documentacion:5000/api/v1/certificados`, etc.).
+
+### Interacciones comunes
+
+- `microservicio_documentacion` consulta `GET /api/v1/programas` y `GET /api/v1/cohortes` para poblar certificados de cursado.
+- `microservicio_alumno` utiliza `GET /api/v1/programas/<hashid>` para validar que el plan elegido por un estudiante existe y está vigente.
+- Cualquier otro servicio puede verificar la salud de este microservicio accediendo a `GET /api/v1/status`.
+
+## Principios de código limpio aplicados
+
+- **Separación por capas**: Resources delegan en Services y éstos en Repositories; no mezclamos acceso a `request`, reglas de negocio y persistencia.
+- **Validaciones explícitas**: Todo payload pasa por `Marshmallow` + `validate_with`, evitando lógica defensiva repetida.
+- **Tipado y docstrings**: Los módulos incluyen anotaciones (`Mapping`, `Sequence`) y descripciones breves. Consulta `docs/CLEAN_CODE.md` para el checklist completo adoptado por el proyecto.
+- **Configuración controlada**: Variables en `.env` / `.env-example`, nunca hardcodeadas. Los valores compartidos (`HASHIDS_*`, URIs) viven en un solo archivo.
+- **Pruebas**: Prepara casos unitarios en `tests/` utilizando la `TestingConfig`. Antes de mergear corré `pytest` (o `python -m pytest`) y, si es relevante, `docker compose up --build` para validar la integración cruzada.
+
+> Si encontrás una pieza que no cumpla estas prácticas, actualiza el código y la guía en `docs/CLEAN_CODE.md` para mantener la consistencia.

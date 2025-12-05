@@ -156,5 +156,3 @@ Todos los servicios comparten la red `sysacad_net`, por lo que pueden comunicars
 - **Tipado y docstrings**: Los módulos incluyen anotaciones (`Mapping`, `Sequence`) y descripciones breves. Consulta `docs/CLEAN_CODE.md` para el checklist completo adoptado por el proyecto.
 - **Configuración controlada**: Variables en `.env` / `.env-example`, nunca hardcodeadas. Los valores compartidos (`HASHIDS_*`, URIs) viven en un solo archivo.
 - **Pruebas**: Prepara casos unitarios en `tests/` utilizando la `TestingConfig`. Antes de mergear corré `pytest` (o `python -m pytest`) y, si es relevante, `docker compose up --build` para validar la integración cruzada.
-
-> Si encontrás una pieza que no cumpla estas prácticas, actualiza el código y la guía en `docs/CLEAN_CODE.md` para mantener la consistencia.

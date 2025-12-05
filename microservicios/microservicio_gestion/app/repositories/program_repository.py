@@ -1,4 +1,4 @@
-"""Repository helpers that encapsulate persistence concerns for Programa."""
+"""Auxiliares de repositorio que encapsulan la persistencia de Programa."""
 
 from collections.abc import Mapping, Sequence
 

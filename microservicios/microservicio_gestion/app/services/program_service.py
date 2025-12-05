@@ -1,4 +1,4 @@
-"""Domain-level orchestration for entidades Programa."""
+"""Orquestación de nivel de dominio para las entidades Programa."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from app.repositories import ProgramaRepository
 
 
 class ProgramaService:
-    """Stateless façade that encapsulates business rules for programas."""
+    """Fachada sin estado que encapsula las reglas de negocio de programas."""
 
     @staticmethod
     def crear(data: Mapping) -> Programa:

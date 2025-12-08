@@ -1,6 +1,10 @@
 services:
   gestion-redis:
     image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${GESTION_REDIS_PASSWORD}
+    command: ["redis-server", "--requirepass", "${GESTION_REDIS_PASSWORD}"]
+    restart: unless-stopped
     networks:
       - sysacad_net
 
@@ -31,13 +35,24 @@ services:
       HASHIDS_SALT: ${HASHIDS_SALT}
       HASHIDS_MIN_LENGTH: ${HASHIDS_MIN_LENGTH}
       HASHIDS_ALPHABET: ${HASHIDS_ALPHABET}
+      REDIS_HOST: gestion-redis
+      REDIS_PORT: ${GESTION_REDIS_PORT}
+      REDIS_DB: ${GESTION_REDIS_DB}
+      REDIS_PASSWORD: ${GESTION_REDIS_PASSWORD}
     depends_on:
       - gestion-redis
       - gestion-db
-    ports:
-      - 5002:5000
+    restart: unless-stopped
     networks:
       - sysacad_net
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gestion.rule=Host(`${GESTION_HOST}`)"
+      - "traefik.http.routers.gestion.entrypoints=${TRAEFIK_ENTRYPOINT}"
+      - "traefik.http.services.gestion.loadbalancer.server.port=5000"
+    deploy:
+      replicas: 2
 
   alumno-db:
     image: postgres:16-alpine
@@ -67,10 +82,17 @@ services:
       DATABASE_PORT: 5432
     depends_on:
       - alumno-db
-    ports:
-      - 8000:8000
+    restart: unless-stopped
     networks:
       - sysacad_net
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.alumno.rule=Host(`${ALUMNO_HOST}`)"
+      - "traefik.http.routers.alumno.entrypoints=${TRAEFIK_ENTRYPOINT}"
+      - "traefik.http.services.alumno.loadbalancer.server.port=8000"
+    deploy:
+      replicas: 2
 
   documentacion-db:
     image: postgres:16-alpine
@@ -85,6 +107,7 @@ services:
 
   documentacion-redis:
     image: redis:7-alpine
+    restart: unless-stopped
     networks:
       - sysacad_net
 
@@ -110,10 +133,17 @@ services:
     depends_on:
       - documentacion-db
       - documentacion-redis
-    ports:
-      - 5001:5000
+    restart: unless-stopped
     networks:
       - sysacad_net
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.documentacion.rule=Host(`${DOCUMENTACION_HOST}`)"
+      - "traefik.http.routers.documentacion.entrypoints=${TRAEFIK_ENTRYPOINT}"
+      - "traefik.http.services.documentacion.loadbalancer.server.port=5000"
+    deploy:
+      replicas: 2
 
   estructura:
     image: flask-sysacad:v1.0.0
@@ -124,14 +154,22 @@ services:
       SQLALCHEMY_TRACK_MODIFICATIONS: ${SQLALCHEMY_TRACK_MODIFICATIONS}
       SQLALCHEMY_RECORD_QUERIES: ${SQLALCHEMY_RECORD_QUERIES}
       PROD_DATABASE_URI: ${PROD_DATABASE_URI}
-    ports:
-      - 5000:5000
     networks:
       - sysacad_net
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.estructura.rule=Host(`${ESTRUCTURA_HOST}`)"
+      - "traefik.http.routers.estructura.entrypoints=${TRAEFIK_ENTRYPOINT}"
+      - "traefik.http.services.estructura.loadbalancer.server.port=5000"
+    deploy:
+      replicas: 1
 
 networks:
   sysacad_net:
     driver: bridge
+  traefik:
+    external: true
 
 volumes:
   gestion_db_data:

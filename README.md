@@ -93,7 +93,7 @@ python -m unittest test.test_facultad
 - El código fuente vive dentro de `microservicios/microservicio_gestion` y comparte dependencias mediante su propio `requirements.txt`.
 - Para ejecutarlo de forma local: `cd microservicios/microservicio_gestion`, creá un virtualenv (`python -m venv .venv`), instalá dependencias (`pip install -r requirements.txt`), copiá `.env.example` a `.env` y levantá `flask run --port 5002` o `python app.py`.
 - Para levantarlo junto al resto del ecosistema usá el `docker-compose.yml` de `docker/`: `cd docker && cp .env-example .env && docker compose up gestion`. Ese compose también permite levantar `estructura` y cualquier otro servicio conectado a la red `sysacad_net`.
-- Las variables necesarias (`GESTION_*`, `HASHIDS_*`, etc.) ahora figuran tanto en el `env-example` de la raíz como en el `docker/.env-example` para que completes tus credenciales una sola vez.
+- Las variables necesarias (`GESTION_*`, `DOCUMENTACION_*`, etc.) ahora figuran tanto en el `env-example` de la raíz como en el `docker/.env-example` para que completes tus credenciales una sola vez.
 - Consulta `docs/CLEAN_CODE.md` para seguir el checklist de principios de código limpio aplicado al proyecto.
 
 ### Levantar todo el ecosistema (Alumno + Documentación + Gestión)

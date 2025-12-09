@@ -2,7 +2,7 @@ from marshmallow import Schema, fields, validate
 
 
 class DocenteSchema(Schema):
-    hashid = fields.String(attribute="hashid", dump_only=True)
+    id = fields.Integer(dump_only=True)
     nombre = fields.String(required=True, validate=validate.Length(min=2, max=80))
     apellido = fields.String(required=True, validate=validate.Length(min=2, max=80))
     email = fields.Email(required=True)

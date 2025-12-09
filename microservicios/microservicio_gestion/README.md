@@ -9,7 +9,7 @@ Microservicio Flask responsable de la gestión académica (programas, módulos, 
 - Administración de cohortes con campus/modalidad, cupos y estado de planificación.
 - Registro de docentes externos e internos, con especialidad y disponibilidad.
 - Asignación de docentes a módulos/cohortes con control de horas semanales.
-- Identificadores ofuscados mediante Hashids en todas las rutas públicas.
+- Identificadores públicos idénticos a los IDs reales para alinear los contratos con el resto de los servicios.
 - Validación de payloads con Marshmallow + decorador `validate_with`.
 - Arquitectura por capas (Resources → Services → Repositories → Models) lista para escalar.
 
@@ -20,7 +20,6 @@ Microservicio Flask responsable de la gestión académica (programas, módulos, 
 | Framework | Flask 3 + Blueprints |
 | Persistencia | SQLAlchemy + Flask-Migrate |
 | Validación | Marshmallow |
-| Serialización IDs | Flask-Hashids |
 | Contenedor | Python 3.11 slim + Gunicorn |
 
 ## Estructura de carpetas
@@ -30,7 +29,7 @@ microservicios/microservicio_gestion/
 ├── app/
 │   ├── __init__.py           # Factory y registro de extensiones
 │   ├── config.py             # Configuración por entorno
-│   ├── extensions.py         # SQLAlchemy, Marshmallow, Hashids
+│   ├── extensions.py         # SQLAlchemy, Marshmallow, cache, limiter
 │   ├── models/               # Programa, Modulo, Cohorte, Docente, Asignacion
 │   ├── repositories/         # Acceso a datos desacoplado
 │   ├── services/             # Reglas de negocio y orquestación
@@ -73,7 +72,6 @@ microservicios/microservicio_gestion/
 | `GESTION_RATE_LIMIT` | Límite por defecto de solicitudes (p. ej. `60 per minute`) |
 | `DOCUMENTACION_BASE_URL` | URL base para el microservicio de documentación |
 | `DOCUMENTACION_TIMEOUT` | Timeout (s) para las consultas HTTP hacia documentación |
-| `HASHIDS_*` | Parámetros para ofuscar IDs |
 
 ## Endpoints principales (`/api/v1`)
 
@@ -81,11 +79,11 @@ microservicios/microservicio_gestion/
 | ------ | ---- | ----------- |
 | GET | `/status` | Healthcheck |
 | GET/POST | `/programas` | Listar/crear programas |
-| GET/PUT/DELETE | `/programas/<hashid>` | Obtener/editar/borrar programa |
-| GET/POST | `/programas/<hashid>/modulos` | Listar o crear módulos de un programa |
-| GET | `/cohortes?programa=<hashid>&estado=abierta` | Cohortes filtradas |
+| GET/PUT/DELETE | `/programas/<id>` | Obtener/editar/borrar programa |
+| GET/POST | `/programas/<id>/modulos` | Listar o crear módulos de un programa |
+| GET | `/cohortes?programa=<id>&estado=abierta` | Cohortes filtradas |
 | POST | `/cohortes` | Crear nueva cohorte |
-| POST | `/cohortes/<hashid>/docentes` | Asignar docente a módulo + cohorte |
+| POST | `/cohortes/<id>/docentes` | Asignar docente a módulo + cohorte |
 | CRUD | `/docentes` | Alta/baja/modificación de docentes |
 | GET | `/integraciones/documentacion/status` | Consulta resiliente al MS de documentación |
 
@@ -94,10 +92,10 @@ microservicios/microservicio_gestion/
 ## Flujo típico
 
 1. **Crear programa** → `POST /programas`.
-2. **Agregar módulos** → `POST /programas/<programaHashid>/modulos`.
+2. **Agregar módulos** → `POST /programas/<programaId>/modulos`.
 3. **Planificar cohorte** → `POST /cohortes` indicando programa, campus y cupo.
 4. **Registrar docentes** → `POST /docentes`.
-5. **Asignar docentes** → `POST /cohortes/<cohorteHashid>/docentes` con `docente_hashid`, `modulo_hashid` y horas.
+5. **Asignar docentes** → `POST /cohortes/<cohorteId>/docentes` con `docente_id`, `modulo_id` y horas.
 
 ## Extender el microservicio
 
@@ -173,7 +171,7 @@ Todos los servicios comparten la red `sysacad_net`, por lo que pueden comunicars
 ### Interacciones comunes
 
 - `microservicio_documentacion` consulta `GET /api/v1/programas` y `GET /api/v1/cohortes` para poblar certificados de cursado.
-- `microservicio_alumno` utiliza `GET /api/v1/programas/<hashid>` para validar que el plan elegido por un estudiante existe y está vigente.
+- `microservicio_alumno` utiliza `GET /api/v1/programas/<id>` para validar que el plan elegido por un estudiante existe y está vigente.
 - Cualquier otro servicio puede verificar la salud de este microservicio accediendo a `GET /api/v1/status`.
 
 ## Principios de código limpio aplicados
@@ -181,5 +179,5 @@ Todos los servicios comparten la red `sysacad_net`, por lo que pueden comunicars
 - **Separación por capas**: Resources delegan en Services y éstos en Repositories; no mezclamos acceso a `request`, reglas de negocio y persistencia.
 - **Validaciones explícitas**: Todo payload pasa por `Marshmallow` + `validate_with`, evitando lógica defensiva repetida.
 - **Tipado y docstrings**: Los módulos incluyen anotaciones (`Mapping`, `Sequence`) y descripciones breves. Consulta `docs/CLEAN_CODE.md` para el checklist completo adoptado por el proyecto.
-- **Configuración controlada**: Variables en `.env` / `.env-example`, nunca hardcodeadas. Los valores compartidos (`HASHIDS_*`, URIs) viven en un solo archivo.
+- **Configuración controlada**: Variables en `.env` / `.env-example`, nunca hardcodeadas. Los valores compartidos (URIs, límites, secretos) viven en un solo archivo.
 - **Pruebas**: Prepara casos unitarios en `tests/` utilizando la `TestingConfig`. Antes de mergear corré `pytest` (o `python -m pytest`) y, si es relevante, `docker compose up --build` para validar la integración cruzada.

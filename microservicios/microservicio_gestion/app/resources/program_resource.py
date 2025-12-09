@@ -38,16 +38,16 @@ def crear_programa(programa):
     return jsonify(programa_schema.dump(creado)), 201
 
 
-@programa_bp.get("/programas/<hashid:programa_id>")
+@programa_bp.get("/programas/<int:programa_id>")
 def obtener_programa(programa_id: int):
-    """Recuperar un programa puntual utilizando hashid resuelto a ID interno."""
+    """Recuperar un programa puntual por su identificador real."""
     programa = ProgramaService.obtener(programa_id)
     if not programa:
         return jsonify({"message": "Programa no encontrado"}), 404
     return jsonify(programa_schema.dump(programa)), 200
 
 
-@programa_bp.put("/programas/<hashid:programa_id>")
+@programa_bp.put("/programas/<int:programa_id>")
 @validate_with(ProgramaSchema)
 @limiter.limit("10/minute")
 def actualizar_programa(payload, programa_id: int):
@@ -59,7 +59,7 @@ def actualizar_programa(payload, programa_id: int):
     return jsonify(programa_schema.dump(actualizado)), 200
 
 
-@programa_bp.delete("/programas/<hashid:programa_id>")
+@programa_bp.delete("/programas/<int:programa_id>")
 @limiter.limit("10/minute")
 def eliminar_programa(programa_id: int):
     """Eliminar un programa existente retornando 404 si no se halló."""

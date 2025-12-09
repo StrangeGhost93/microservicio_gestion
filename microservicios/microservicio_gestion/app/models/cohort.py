@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 
-from flask_hashids import HashidMixin
-
 from app.extensions import db
 
 
 @dataclass
-class Cohorte(HashidMixin, db.Model):
+class Cohorte(db.Model):
     __tablename__ = "cohortes"
 
     id: int = db.Column(db.Integer, primary_key=True)

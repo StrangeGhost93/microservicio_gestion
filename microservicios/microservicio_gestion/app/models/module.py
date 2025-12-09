@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 
-from flask_hashids import HashidMixin
-
 from app.extensions import db
 
 
 @dataclass
-class Modulo(HashidMixin, db.Model):
+class Modulo(db.Model):
     __tablename__ = "modulos"
 
     id: int = db.Column(db.Integer, primary_key=True)

@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 
-from flask_hashids import HashidMixin
-
 from app.extensions import db
 
 
 @dataclass
-class Docente(HashidMixin, db.Model):
+class Docente(db.Model):
     __tablename__ = "docentes"
 
     id: int = db.Column(db.Integer, primary_key=True)

@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 
-from flask_hashids import HashidMixin
-
 from app.extensions import db
 
 
 @dataclass
-class Programa(HashidMixin, db.Model):
+class Programa(db.Model):
     __tablename__ = "programas"
 
     id: int = db.Column(db.Integer, primary_key=True)

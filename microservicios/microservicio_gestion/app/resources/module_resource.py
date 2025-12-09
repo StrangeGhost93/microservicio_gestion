@@ -15,13 +15,13 @@ def listar_modulos():
     return jsonify(modulo_schema.dump(modulos, many=True)), 200
 
 
-@modulo_bp.get("/programas/<hashid:programa_id>/modulos")
+@modulo_bp.get("/programas/<int:programa_id>/modulos")
 def listar_modulos_por_programa(programa_id: int):
     modulos = ModuloService.listar(programa_id)
     return jsonify(modulo_schema.dump(modulos, many=True)), 200
 
 
-@modulo_bp.post("/programas/<hashid:programa_id>/modulos")
+@modulo_bp.post("/programas/<int:programa_id>/modulos")
 @validate_with(ModuloSchema)
 def crear_modulo(payload, programa_id: int):
     payload["programa_id"] = programa_id
@@ -29,7 +29,7 @@ def crear_modulo(payload, programa_id: int):
     return jsonify(modulo_schema.dump(creado)), 201
 
 
-@modulo_bp.delete("/modulos/<hashid:modulo_id>")
+@modulo_bp.delete("/modulos/<int:modulo_id>")
 def eliminar_modulo(modulo_id: int):
     eliminado = ModuloService.eliminar(modulo_id)
     if not eliminado:

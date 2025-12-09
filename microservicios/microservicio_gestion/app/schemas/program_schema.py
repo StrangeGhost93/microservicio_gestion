@@ -2,7 +2,7 @@ from marshmallow import Schema, fields, validate
 
 
 class ProgramaSchema(Schema):
-    hashid = fields.String(attribute="hashid", dump_only=True)
+    id = fields.Integer(dump_only=True)
     nombre = fields.String(required=True, validate=validate.Length(min=3, max=120))
     version = fields.String(required=True, validate=validate.Length(min=1, max=40))
     modalidad = fields.String(required=True, validate=validate.Length(min=2, max=40))

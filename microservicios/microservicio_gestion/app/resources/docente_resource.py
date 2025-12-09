@@ -23,7 +23,7 @@ def crear_docente(payload):
     return jsonify(docente_schema.dump(creado)), 201
 
 
-@docente_bp.get("/docentes/<hashid:docente_id>")
+@docente_bp.get("/docentes/<int:docente_id>")
 def obtener_docente(docente_id: int):
     docente = DocenteService.obtener(docente_id)
     if not docente:
@@ -31,7 +31,7 @@ def obtener_docente(docente_id: int):
     return jsonify(docente_schema.dump(docente)), 200
 
 
-@docente_bp.put("/docentes/<hashid:docente_id>")
+@docente_bp.put("/docentes/<int:docente_id>")
 @validate_with(DocenteSchema)
 def actualizar_docente(payload, docente_id: int):
     actualizado = DocenteService.actualizar(docente_id, payload)
@@ -40,7 +40,7 @@ def actualizar_docente(payload, docente_id: int):
     return jsonify(docente_schema.dump(actualizado)), 200
 
 
-@docente_bp.delete("/docentes/<hashid:docente_id>")
+@docente_bp.delete("/docentes/<int:docente_id>")
 def eliminar_docente(docente_id: int):
     eliminado = DocenteService.eliminar(docente_id)
     if not eliminado:

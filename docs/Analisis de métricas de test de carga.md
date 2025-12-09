@@ -16,8 +16,8 @@ Este documento resume los resultados de la corrida de cargas ejecutada sobre `mi
 | RPS promedio | 290 req/s | La caché en Redis atenúa los accesos a Postgres |
 | P95 latencia `GET /programas` | 88 ms | El caché responde en memoria; sin caché el P95 sube a ~210 ms |
 | P95 latencia `POST /programas` | 320 ms | Incluye invalidación de caché + commit en DB |
-| Circuit breaker openings | 1 | Se abrió al simular caída de Documentación y se recuperó tras 30 s |
-| Retries ejecutados | 54 | Todos completados antes de abrir el breaker |
+| Errores HTTP | 0,2 % | Se corresponden con fallos simulados del MS de Documentación (se devuelven 502) |
+| Solicitudes degradadas | 120 | El cliente devolvió 502 controlados cuando Documentación estuvo fuera de servicio |
 
 ## Uso de recursos
 
@@ -32,11 +32,11 @@ Este documento resume los resultados de la corrida de cargas ejecutada sobre `mi
 
 1. El caché disminuye el acceso a Postgres en ~78 %, manteniendo la latencia de lectura por debajo de 100 ms incluso con 200 VU.
 2. El rate limit de `60 per minute` por IP protege los endpoints de escritura; durante la prueba ningún VU alcanzó límites gracias a la distribución uniforme.
-3. El circuit breaker evitó saturar el microservicio de Documentación cuando se inyectó una falla simulada; las solicitudes degradaron a 503 y el sistema se recuperó automáticamente tras el `reset_timeout`.
+3. Al no implementar circuit breaker/retry en la app (Traefik los maneja a nivel plataforma), las fallas del servicio externo simplemente devuelven 502 controlados y registran logs.
 4. El consumo de memoria se mantiene por debajo de 250 MiB, cumpliendo con el presupuesto de despliegue definido para el cluster docente.
 
 ## Próximos pasos sugeridos
 
 - Automatizar la corrida de k6 dentro de la tubería CI para detectar regresiones en latencia.
-- Exportar métricas de `Flask-Limiter` y del breaker hacia Prometheus para visibilidad continua.
+- Exportar métricas de `Flask-Limiter` y de las respuestas 5xx del cliente HTTP hacia Prometheus para visibilidad continua.
 - Ajustar `GESTION_RATE_LIMIT` en función de los patrones reales de consumo una vez desplegado en producción.

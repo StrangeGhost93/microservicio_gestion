@@ -18,8 +18,7 @@ class BaseConfig:
     RATELIMIT_DEFAULT = os.getenv("GESTION_RATE_LIMIT", "60 per minute")
     RATELIMIT_STORAGE_URI = CACHE_REDIS_URL
     DOCUMENTACION_BASE_URL = os.getenv("DOCUMENTACION_BASE_URL", "http://localhost:5001")
-    CIRCUIT_MAX_FAILURES = int(os.getenv("GESTION_CIRCUIT_MAX_FAILURES", "3"))
-    CIRCUIT_RESET_TIMEOUT = int(os.getenv("GESTION_CIRCUIT_RESET_TIMEOUT", "30"))
+    DOCUMENTACION_TIMEOUT = float(os.getenv("DOCUMENTACION_TIMEOUT", "3"))
 
     @staticmethod
     def init_app(app):

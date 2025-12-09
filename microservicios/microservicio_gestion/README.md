@@ -72,8 +72,7 @@ microservicios/microservicio_gestion/
 | `GESTION_REDIS_URL` | Cache + rate limiting (ej. `redis://localhost:6379/0`) |
 | `GESTION_RATE_LIMIT` | Límite por defecto de solicitudes (p. ej. `60 per minute`) |
 | `DOCUMENTACION_BASE_URL` | URL base para el microservicio de documentación |
-| `GESTION_CIRCUIT_MAX_FAILURES` | Fallos consecutivos antes de abrir el circuito |
-| `GESTION_CIRCUIT_RESET_TIMEOUT` | Tiempo (s) para reintentar tras circuito abierto |
+| `DOCUMENTACION_TIMEOUT` | Timeout (s) para las consultas HTTP hacia documentación |
 | `HASHIDS_*` | Parámetros para ofuscar IDs |
 
 ## Endpoints principales (`/api/v1`)
@@ -109,16 +108,15 @@ microservicios/microservicio_gestion/
 
 ## Resiliencia operativa
 
-- **Caching + rate limiting**: Los listados de programas utilizan `Flask-Caching` respaldado por Redis y `Flask-Limiter` para evitar abusos; los cambios (POST/PUT/DELETE) invalidan la caché automáticamente.
-- **Circuit breaker + retry**: El `DocumentacionClient` usa `pybreaker` y `tenacity` para invocar `microservicio_documentacion` sin saturarlo; si se abre el circuito el endpoint de integraciones retorna 503 degradado.
-- **Integración observable**: `GET /api/v1/integraciones/documentacion/status` expone el estado de la dependencia externa para dashboards o health checks compuestos.
-- **Configuración moldeable**: Todos los parámetros de resiliencia (timeouts, límites, Redis URL) viven en el `.env` para ajustarlos por entorno sin tocar código.
+- **Caching + rate limiting**: El endpoint más consultado (`GET /api/v1/programas`) usa `Flask-Caching` respaldado en Redis y `Flask-Limiter`. Esto justifica la presencia de Redis aunque el microservicio gestione programas: la lista de planes académicos es la fuente más leída por el resto del ecosistema.
+- **Integración observable**: `GET /api/v1/integraciones/documentacion/status` expone el estado del microservicio de Documentación sin aplicar circuit breaker propio; las políticas de reintento/aislamiento ya las maneja Traefik a nivel plataforma.
+- **Configuración moldeable**: Los parámetros (Redis, límites, timeout del cliente externo) viven en el `.env` para ajustarlos por entorno sin tocar código.
 
 ## Pruebas automatizadas
 
 El microservicio cuenta con una batería de pruebas `pytest` que cubre:
 
-- Cliente resilient (`DocumentacionClient`) ante respuestas OK, fallos HTTP y circuit breaker.
+- Cliente HTTP hacia documentación ante respuestas exitosas y errores controlados.
 - Endpoint de integraciones para propagar el estado remoto.
 - Parsing de filtros y cacheo en `program_resource`.
 

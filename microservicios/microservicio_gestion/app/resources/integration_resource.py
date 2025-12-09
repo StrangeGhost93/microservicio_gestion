@@ -11,6 +11,6 @@ integracion_bp = Blueprint("integraciones", __name__)
 @integracion_bp.get("/integraciones/documentacion/status")
 @limiter.limit("5/minute")
 def estado_documentacion():
-    """Consultar el estado del microservicio de documentación con circuit breaker."""
+    """Consultar de forma acotada el estado del microservicio de documentación."""
     payload, status = DocumentacionClient.estado_servicio()
     return jsonify(payload), status

@@ -280,3 +280,16 @@ Idea clave: este endpoint maneja una relación entre tres entidades: cohorte, do
   - Se configuró Traefik para enrutar `gestion` con host `${GESTION_HOST}` y puerto interno 5000.
   - Redis exige contraseña (`GESTION_REDIS_PASSWORD`) y se usa tanto para cache como para rate limiting.
   - Las réplicas de `gestion` (2 instancias) se balancean vía Traefik; no hay bind de puertos para evitar conflictos.
+
+Levantar stack: docker compose up -d
+Ver contenedores y salud: docker compose ps (gestion debe salir healthy)
+Logs breves: docker compose logs --tail 20 gestion
+Health interno: docker compose exec gestion curl -f http://localhost:5000/api/v1/status
+enerarla antes de correr upgrade (cada vez que levantes limpio):
+docker compose exec gestion sh -c "flask db init && flask db migrate -m 'init' && flask db upgrade"
+Migraciones (ya hechas, muestra que está al día): docker compose exec gestion flask db upgrade
+Redis OK:
+docker compose exec gestion python -c "import os, redis; r=redis.Redis(host='gestion-redis', port=6379, password=os.getenv('GESTION_REDIS_PASSWORD')); r.ping(); print('redis ok')"
+Tablas presentes:
+docker compose exec gestion python -c "from app import app; from app.extensions import db; print([t.name for t in db.metadata.sorted_tables])"
+Endpoint de negocio: docker compose exec gestion curl -f http://localhost:5000/api/v1/programas (vacío si no hay seed)

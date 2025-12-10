@@ -37,6 +37,7 @@ services:
       REDIS_DB: ${GESTION_REDIS_DB}
       REDIS_PASSWORD: ${GESTION_REDIS_PASSWORD}
       REDIS_URL: redis://gestion-redis:${GESTION_REDIS_PASSWORD}@gestion-redis:${GESTION_REDIS_PORT}/${GESTION_REDIS_DB}
+      GESTION_REDIS_URL: redis://:${GESTION_REDIS_PASSWORD}@gestion-redis:${GESTION_REDIS_PORT}/${GESTION_REDIS_DB}
     depends_on:
       - gestion-redis
       - gestion-db

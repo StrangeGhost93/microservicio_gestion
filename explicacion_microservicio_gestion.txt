@@ -1,0 +1,282 @@
+Título: Explicación del microservicio de Gestión Académica (microservicio_gestion)
+
+1. De qué va el microservicio
+-----------------------------
+
+Este proyecto es un microservicio de Gestión Académica. Su responsabilidad es manejar toda la información relacionada con:
+
+- Programas o carreras ejecutivas.
+- Módulos o asignaturas que pertenecen a esos programas.
+- Cohortes: grupos de alumnos asociados a un programa, con datos como sede/campus, modalidad (presencial/virtual), fechas de inicio/fin, cupos, etc.
+- Asignación de docentes a cada cohorte y módulo, incluyendo las horas semanales que cada docente dicta.
+
+Dentro del ecosistema general (donde también existen microservicios de alumnos y de documentación), este microservicio expone una API REST para que otras aplicaciones o microservicios puedan:
+
+- Crear, listar, actualizar y eliminar cohortes.
+- Consultar cohortes filtrando por programa o estado.
+- Asignar docentes a cohortes y módulos con una cantidad de horas semanales.
+
+2. Arquitectura interna del microservicio
+-----------------------------------------
+
+El microservicio está desarrollado con Flask y organizado por capas, siguiendo principios de código limpio (separación de responsabilidades, SRP, etc.):
+
+- resources/: define los endpoints HTTP (controladores) que reciben la request, llaman a la capa de servicios y preparan la respuesta JSON.
+- services/: contiene la lógica de negocio. Aquí se aplican las reglas (validaciones de dominio, consistencia, etc.) y se orquesta el acceso a datos.
+- repositories/: se encarga del acceso a la base de datos (a través de ORM/SQLAlchemy u otra abstracción).
+- schemas/: define los esquemas de validación y serialización con Marshmallow. Asegura que el JSON de entrada/salida tenga los campos y tipos correctos.
+- validators/: provee decoradores como validate_with para validar la entrada de las requests contra un esquema antes de ejecutar la lógica del endpoint.
+
+Cada endpoint:
+
+1. Valida la entrada (si corresponde).
+2. Llama a un método de Service.
+3. El Service utiliza Repositories para hablar con la base.
+4. Se serializa la respuesta con un Schema y se devuelve JSON con el código HTTP adecuado.
+
+3. Explicación del archivo cohort_resource.py
+--------------------------------------------
+
+Archivo: microservicios/microservicio_gestion/app/resources/cohort_resource.py
+
+Este archivo define todos los endpoints relacionados con cohortes y la asignación de docentes a una cohorte.
+
+3.1. Imports y configuración inicial
+------------------------------------
+
+from flask import Blueprint, jsonify, request
+
+from app.schemas import AsignacionSchema, CohorteSchema
+from app.services import CohorteService
+from app.validators import validate_with
+
+cohorte_bp = Blueprint("cohortes", __name__)
+cohorte_schema = CohorteSchema()
+
+- Blueprint: permite agrupar rutas relacionadas en un módulo lógico (en este caso, todo lo de “cohortes”).
+- jsonify: construye respuestas JSON de forma sencilla.
+- request: permite acceder a parámetros de la URL, query string y cuerpo de la petición.
+- CohorteSchema y AsignacionSchema: definen qué campos y tipos debe tener una cohorte o una asignación y cómo se serializan/deserializan.
+- CohorteService: es la capa de servicio que contiene la lógica de negocio relacionada con cohortes (listar, crear, actualizar, eliminar, asignar docentes).
+- validate_with: es un decorador que valida la entrada de las requests contra un esquema dado.
+
+cohorte_bp = Blueprint("cohortes", __name__):
+
+- Crea un Blueprint llamado "cohortes".
+- Todas las rutas que se decoren con @cohorte_bp.get(...), @cohorte_bp.post(...), etc., pertenecen a este grupo.
+
+cohorte_schema = CohorteSchema():
+
+- Instancia un esquema de cohorte para reutilizarlo cuando necesitemos convertir objetos de dominio a JSON.
+
+3.2. Listar cohortes – GET /cohortes
+------------------------------------
+
+@cohorte_bp.get("/cohortes")
+def listar_cohortes():
+    programa_id = request.args.get("programa", type=int)
+    estado = request.args.get("estado")
+
+    cohortes = CohorteService.listar(programa_id, estado)
+    return jsonify(cohorte_schema.dump(cohortes, many=True)), 200
+
+- Ruta: GET /cohortes.
+- Lee parámetros opcionales desde la query string:
+  - programa: se convierte explícitamente a int (type=int).
+  - estado: se lee como string (por ejemplo, "activa", "cerrada", etc.).
+- Llama a CohorteService.listar(programa_id, estado):
+  - Aplica los filtros que correspondan y obtiene la lista de cohortes.
+- Serializa la lista con cohorte_schema.dump(cohortes, many=True):
+  - many=True indica que se trata de una colección de objetos.
+- Devuelve:
+  - JSON con la lista de cohortes.
+  - Código HTTP 200 OK.
+
+Idea clave: este endpoint permite obtener todas las cohortes o filtrarlas por programa y/o estado.
+
+3.3. Crear cohorte – POST /cohortes
+-----------------------------------
+
+@cohorte_bp.post("/cohortes")
+@validate_with(CohorteSchema)
+def crear_cohorte(payload):
+    creado = CohorteService.crear(payload)
+    return jsonify(cohorte_schema.dump(creado)), 201
+
+- Ruta: POST /cohortes.
+- Decorador @validate_with(CohorteSchema):
+  - Antes de ejecutar crear_cohorte, toma el JSON del cuerpo de la request.
+  - Lo valida usando CohorteSchema.
+  - Si hay errores de validación (campos faltantes, tipos incorrectos), el decorador responde con un error (normalmente 400) y no entra a la función.
+  - Si todo está bien, la función crear_cohorte recibe un payload ya validado.
+- En la función:
+  - CohorteService.crear(payload) aplica reglas de negocio y persiste la nueva cohorte en la base de datos.
+  - cohorte_schema.dump(creado) convierte el objeto de cohorte creado a JSON.
+- Devuelve:
+  - El JSON de la cohorte creada.
+  - Código HTTP 201 Created.
+
+Idea clave: aquí se ve clara la separación de responsabilidades:
+- Validación de formato/datos → CohorteSchema + validate_with.
+- Lógica de creación → CohorteService.
+
+3.4. Obtener cohorte por id – GET /cohortes/<int:cohorte_id>
+-----------------------------------------------------------
+
+@cohorte_bp.get("/cohortes/<int:cohorte_id>")
+def obtener_cohorte(cohorte_id: int):
+    cohorte = CohorteService.obtener(cohorte_id)
+    if not cohorte:
+        return jsonify({"message": "Cohorte no encontrada"}), 404
+    return jsonify(cohorte_schema.dump(cohorte)), 200
+
+- Ruta: GET /cohortes/<int:cohorte_id>.
+- El <int:cohorte_id> indica:
+  - Que el segmento de la URL debe ser un entero.
+  - Flask convierte automáticamente ese valor a int y lo pasa como parámetro a la función.
+- Flujo:
+  1. Se invoca CohorteService.obtener(cohorte_id) para buscar la cohorte en la base de datos.
+  2. Si no la encuentra:
+     - Devuelve {"message": "Cohorte no encontrada"} con código 404 Not Found.
+  3. Si la encuentra:
+     - Serializa con cohorte_schema.dump(cohorte) y devuelve 200 OK.
+
+Idea clave: se maneja explícitamente el caso de “no encontrado” con un mensaje claro y código 404.
+
+3.5. Actualizar cohorte – PUT /cohortes/<int:cohorte_id>
+--------------------------------------------------------
+
+@cohorte_bp.put("/cohortes/<int:cohorte_id>")
+@validate_with(CohorteSchema)
+def actualizar_cohorte(payload, cohorte_id: int):
+    actualizado = CohorteService.actualizar(cohorte_id, payload)
+    if not actualizado:
+        return jsonify({"message": "Cohorte no encontrada"}), 404
+    return jsonify(cohorte_schema.dump(actualizado)), 200
+
+- Ruta: PUT /cohortes/<int:cohorte_id>.
+- Decorador @validate_with(CohorteSchema):
+  - Valida el JSON de entrada igual que en el caso de creación.
+- Parámetros:
+  - payload: datos ya validados del cuerpo de la petición.
+  - cohorte_id: entero tomado de la URL.
+- Flujo:
+  1. Llama a CohorteService.actualizar(cohorte_id, payload).
+  2. Si no existe la cohorte:
+     - Responde {"message": "Cohorte no encontrada"} + 404.
+  3. Si se actualiza correctamente:
+     - Serializa el objeto actualizado y devuelve 200 OK.
+
+Idea clave: se mantiene el mismo esquema de validación y el mismo manejo de “no encontrado” que en el GET.
+
+3.6. Eliminar cohorte – DELETE /cohortes/<int:cohorte_id>
+---------------------------------------------------------
+
+@cohorte_bp.delete("/cohortes/<int:cohorte_id>")
+def eliminar_cohorte(cohorte_id: int):
+    eliminado = CohorteService.eliminar(cohorte_id)
+    if not eliminado:
+        return jsonify({"message": "Cohorte no encontrada"}), 404
+    return jsonify({"message": "Cohorte eliminada"}), 200
+
+- Ruta: DELETE /cohortes/<int:cohorte_id>.
+- Flujo:
+  1. CohorteService.eliminar(cohorte_id) intenta borrar la cohorte.
+  2. Si no la encuentra:
+     - Devuelve 404 con un mensaje.
+  3. Si se elimina:
+     - Devuelve {"message": "Cohorte eliminada"} + 200 OK.
+
+Idea clave: las operaciones de lectura, actualización y borrado comparten el patrón de devolver 404 cuando el recurso no existe.
+
+3.7. Asignar docente a cohorte – POST /cohortes/<int:cohorte_id>/docentes
+-------------------------------------------------------------------------
+
+@cohorte_bp.post("/cohortes/<int:cohorte_id>/docentes")
+@validate_with(AsignacionSchema)
+def asignar_docente(payload, cohorte_id: int):
+    docente_id = payload.get("docente_id")
+    modulo_id = payload.get("modulo_id")
+    asignacion = CohorteService.asignar_docente(
+        cohorte_id,
+        docente_id,
+        modulo_id,
+        payload.get("horas_semanales", 4),
+    )
+    if not asignacion:
+        return jsonify({"message": "No se pudo generar la asignación"}), 404
+    return jsonify({
+        "cohorte_id": asignacion.cohorte_id,
+        "docente_id": asignacion.docente_id,
+        "modulo_id": asignacion.modulo_id,
+        "horas_semanales": asignacion.horas_semanales,
+    }), 201
+
+- Ruta: POST /cohortes/<int:cohorte_id>/docentes.
+- Decorador @validate_with(AsignacionSchema):
+  - Valida que el cuerpo de la petición tenga al menos:
+    - docente_id
+    - modulo_id
+    - y opcionalmente horas_semanales.
+- Parámetros:
+  - payload: JSON já validado.
+  - cohorte_id: id de la cohorte, entero desde la URL.
+- Flujo:
+  1. Extrae docente_id y modulo_id del payload.
+  2. Llama a CohorteService.asignar_docente(...) pasando:
+     - cohorte_id
+     - docente_id
+     - modulo_id
+     - horas_semanales (si no viene en el JSON, usa por defecto 4).
+  3. Si CohorteService.asignar_docente no puede crear la asignación (por ejemplo, cohorte o docente inexistente, validaciones de negocio, etc.):
+     - Responde con {"message": "No se pudo generar la asignación"} + 404.
+  4. Si se crea la asignación:
+     - Devuelve un JSON con:
+       - cohorte_id
+       - docente_id
+       - modulo_id
+       - horas_semanales
+     - Código HTTP 201 Created.
+
+Idea clave: este endpoint maneja una relación entre tres entidades: cohorte, docente y módulo, delegando la lógica compleja al CohorteService.
+
+4. Resumen corto para explicar al profesor
+-----------------------------------------
+
+- El microservicio de Gestión Académica administra programas, módulos, cohortes y asignaciones de docentes.
+- Está diseñado con capas claras: resources (endpoints), services (negocio), repositories (DB), schemas (validación).
+- cohort_resource.py define la API REST para cohortes:
+  - GET /cohortes: lista cohortes con filtros.
+  - POST /cohortes: crea una cohorte, validando el JSON de entrada.
+  - GET /cohortes/<id>: obtiene una cohorte por id, maneja 404 si no existe.
+  - PUT /cohortes/<id>: actualiza una cohorte, también con validación y manejo de 404.
+  - DELETE /cohortes/<id>: elimina una cohorte.
+  - POST /cohortes/<id>/docentes: asigna un docente a una cohorte y módulo, con horas semanales.
+- No usamos hashids: los IDs se manejan como enteros simples en las URLs y en las respuestas JSON, siguiendo lo acordado en clase.
+- La validación de los cuerpos JSON se hace mediante esquemas (Marshmallow) y decoradores, manteniendo los controladores limpios y centrados en el flujo de la request/response.
+
+5. Docker y cómo levantar todo (lo que tengo que contar al profe)
+-----------------------------------------------------------------
+
+- Imágenes y seguridad: el Dockerfile de `microservicio_gestion` usa `python:3.11-slim`, instala solo lo necesario (build-essential, libpq-dev, netcat), elimina cache y corre con usuario no root `appuser`. Expone 5000 y define healthcheck TCP.
+- Orquestación: en `docker/docker-compose.yml` hay servicios `gestion`, `gestion-db` (Postgres), `gestion-redis` (cache/rate limit), más `alumno` y `documentacion`. Se añade red externa `traefik` y labels para enrutar por host (ej. `gestion.localhost`). Se definió `deploy.replicas: 2` para escalar `gestion`, `alumno` y `documentacion`.
+- Puertos: ya no se hace port-binding directo al host; Traefik debe publicar los puertos. Si se necesita exponer temporalmente, se pueden añadir `ports:` en cada servicio (p.ej. `- 5002:5000` para gestion), pero en la versión actual se usa Traefik.
+- Variables importantes (en `.env` y `.env-example` de `docker/`):
+  - Base de datos gestion: `GESTION_DB_NAME`, `GESTION_DB_USER`, `GESTION_DB_PASSWORD`, URIs `GESTION_*_DATABASE_URI`.
+  - Redis gestion: `GESTION_REDIS_PORT`, `GESTION_REDIS_DB`, `GESTION_REDIS_PASSWORD` (se fuerza `--requirepass`).
+  - Traefik: `TRAEFIK_ENTRYPOINT` (ej. web) y hosts `GESTION_HOST`, `ALUMNO_HOST`, `DOCUMENTACION_HOST`, `ESTRUCTURA_HOST`.
+- Redes: `sysacad_net` interna y `traefik` externa (se crea con `docker network create traefik`).
+- Comandos típicos para la demo:
+  1) Clonar/colocar los repos hermanos (`microservicio_gestion`, `microservicio_alumno`, `microservicio_documentacion`) en el nivel que espera el compose.
+  2) Copiar y ajustar variables: `cd docker && Copy-Item .env-example .env` y editar credenciales reales.
+  3) Crear red de Traefik si no existe: `docker network create traefik`.
+  4) Levantar la pila: `docker compose up --build` (desde `docker/`).
+  5) Correr migraciones dentro de los contenedores:
+     - `docker compose exec gestion flask db upgrade`
+     - `docker compose exec alumno python manage.py migrate`
+     - `docker compose exec documentacion flask db upgrade`
+- Ejemplos concretos en este proyecto:
+  - `gestion` lee su DB por `GESTION_DATABASE_URI` y cachea listados en Redis (`gestion-redis`).
+  - Se configuró Traefik para enrutar `gestion` con host `${GESTION_HOST}` y puerto interno 5000.
+  - Redis exige contraseña (`GESTION_REDIS_PASSWORD`) y se usa tanto para cache como para rate limiting.
+  - Las réplicas de `gestion` (2 instancias) se balancean vía Traefik; no hay bind de puertos para evitar conflictos.

@@ -1,27 +1,11 @@
-from app.integrations.documentacion_client import DocumentacionClient
-
-
-def test_estado_documentacion_ok(client, monkeypatch):
-    monkeypatch.setattr(
-        DocumentacionClient,
-        "estado_servicio",
-        classmethod(lambda cls: ({"service": "documentacion", "status": "ok"}, 200)),
-    )
-
-    response = client.get("/api/v1/integraciones/documentacion/status")
+def test_especialidad_detail_found(client):
+    response = client.get("/api/v1/especialidades/1")
 
     assert response.status_code == 200
-    assert response.get_json()["status"] == "ok"
+    assert response.get_json()["id"] == 1
 
 
-def test_estado_documentacion_error(client, monkeypatch):
-    monkeypatch.setattr(
-        DocumentacionClient,
-        "estado_servicio",
-        classmethod(lambda cls: ({"service": "documentacion", "status": "error"}, 502)),
-    )
+def test_especialidad_detail_not_found(client):
+    response = client.get("/api/v1/especialidades/9999")
 
-    response = client.get("/api/v1/integraciones/documentacion/status")
-
-    assert response.status_code == 502
-    assert response.get_json()["status"] == "error"
+    assert response.status_code == 404

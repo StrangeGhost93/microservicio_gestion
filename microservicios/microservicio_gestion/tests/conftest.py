@@ -12,7 +12,7 @@ from app import create_app
 
 @pytest.fixture
 def app():
-    app = create_app("testing")
+    app = create_app()
     ctx = app.app_context()
     ctx.push()
     yield app

@@ -1,27 +1,26 @@
 FROM python:3.11-slim
 
-# Seguridad/buenas prácticas: sin bytecode, sin cache pip y sin chequeos de versión.
 ENV PYTHONUNBUFFERED=1 \
-	PYTHONDONTWRITEBYTECODE=1 \
-	PIP_NO_CACHE_DIR=1 \
-	PIP_DISABLE_PIP_VERSION_CHECK=1
+    PYTHONDONTWRITEBYTECODE=1
+
 WORKDIR /app
 
-# System deps needed for psycopg2 / gunicorn and health checks
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		build-essential \
-		libpq-dev \
-		netcat-traditional \
-		curl \
-	&& rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Non-root user
+# Instalar uv (gestor de dependencias) y dejarlo en PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Usuario no root
 RUN useradd --create-home --home /home/appuser --shell /bin/bash appuser
 
-COPY requirements.txt ./
-RUN pip install --upgrade pip \ 
-	&& pip install --no-cache-dir -r requirements.txt
+# Instalar dependencias con uv (sin base de datos ni redis)
+COPY pyproject.toml ./
+RUN uv pip install --system --no-cache flask==3.0.2 gunicorn==21.2.0
 
 COPY . .
 

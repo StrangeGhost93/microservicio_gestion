@@ -1,0 +1,18 @@
+[project]
+name = "microservicio-gestion-especialidades"
+version = "0.1.0"
+description = "Mock de especialidades para SYSACAD"
+authors = [{ name = "Equipo SYSACAD" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "flask==3.0.2",
+    "gunicorn==21.2.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+# Sin extras ni dev-dependencies en este microservicio mock.

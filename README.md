@@ -89,31 +89,35 @@ python -m unittest test.test_facultad
 
 ## 🧩 Microservicios del proyecto
 
-### Gestión Académica
-- El código fuente vive dentro de `microservicios/microservicio_gestion` y comparte dependencias mediante su propio `requirements.txt`.
-- Para ejecutarlo de forma local: `cd microservicios/microservicio_gestion`, creá un virtualenv (`python -m venv .venv`), instalá dependencias (`pip install -r requirements.txt`), copiá `.env.example` a `.env` y levantá `flask run --port 5002` o `python app.py`.
-- Para levantarlo junto al resto del ecosistema usá el `docker-compose.yml` de `docker/`: `cd docker && cp .env-example .env && docker compose up gestion`. Ese compose también permite levantar `estructura` y cualquier otro servicio conectado a la red `sysacad_net`.
-- Las variables necesarias (`GESTION_*`, `DOCUMENTACION_*`, etc.) ahora figuran tanto en el `env-example` de la raíz como en el `docker/.env-example` para que completes tus credenciales una sola vez.
-- Consulta `docs/CLEAN_CODE.md` para seguir el checklist de principios de código limpio aplicado al proyecto.
+### Gestión (mock de especialidades)
+- El código fuente vive dentro de `microservicios/microservicio_gestion` y ahora sólo expone `/api/v1/especialidades` y `/api/v1/especialidades/<id>` además del healthcheck.
+- Dependencias vía `uv` con `pyproject.toml` (no se usa `requirements.txt`).
+- Ejecución local: `cd microservicios/microservicio_gestion`, copiar `.env.example` a `.env`, crear env si querés (`uv venv .venv && .venv\Scripts\activate` en Windows) y `flask run --port 5002`.
+- En Docker: `cd docker && cp .env-example .env && docker compose up gestion` (requiere red `mired` ya creada).
 
 ### Levantar todo el ecosistema (Alumno + Documentación + Gestión)
 
-1. Asegurate de tener los tres repositorios clonados como carpetas hermanas:
+1. Creá la red compartida (mismo criterio que el repo de referencia):
+   ```powershell
+   docker network create mired
+   ```
+
+2. Asegurate de tener los tres repositorios clonados como carpetas hermanas:
    - `Desarrollo de software Parcial 2/` (este repo, contiene `docker/`)
    - `../microservicio_alumno/`
    - `../microservicio_documentacion/`
-2. Desde `Desarrollo de software Parcial 2/docker/` copiá las variables ejemplo:
+3. Desde `Desarrollo de software Parcial 2/docker/` copiá las variables ejemplo:
    ```powershell
    cd docker
    Copy-Item .env-example .env
    ```
    Editá `.env` con las credenciales reales de cada microservicio (PostgreSQL, Redis, claves secretas, etc.).
-3. Construí y levantá los contenedores necesarios:
+4. Construí y levantá los contenedores necesarios (la red `sysacad_net` ahora apunta a `mired`):
    ```powershell
    docker compose up --build gestion alumno documentacion
    ```
    Se expondrán los puertos: `estructura` 5000, `documentacion` 5001, `gestion` 5002 y `alumno` 8000.
-4. Ejecutá las migraciones y seeds desde los contenedores (solo la primera vez):
+5. Ejecutá las migraciones y seeds desde los contenedores (solo la primera vez):
    ```powershell
    docker compose exec gestion flask db upgrade
    docker compose exec alumno python manage.py migrate

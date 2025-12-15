@@ -293,3 +293,5 @@ docker compose exec gestion python -c "import os, redis; r=redis.Redis(host='ges
 Tablas presentes:
 docker compose exec gestion python -c "from app import app; from app.extensions import db; print([t.name for t in db.metadata.sorted_tables])"
 Endpoint de negocio: docker compose exec gestion curl -f http://localhost:5000/api/v1/programas (vacío si no hay seed)
+docker network ls | findstr traefik
+docker ps --format "{{.Names}} {{.Networks}}" | findstr gestion

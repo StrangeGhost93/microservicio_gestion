@@ -1,24 +1,4 @@
 services:
-  gestion-redis:
-    image: redis:7-alpine
-    environment:
-      REDIS_PASSWORD: ${GESTION_REDIS_PASSWORD}
-    command: ["redis-server", "--requirepass", "${GESTION_REDIS_PASSWORD}"]
-    restart: unless-stopped
-    networks:
-      - sysacad_net
-
-  gestion-db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${GESTION_DB_NAME}
-      POSTGRES_USER: ${GESTION_DB_USER}
-      POSTGRES_PASSWORD: ${GESTION_DB_PASSWORD}
-    volumes:
-      - gestion_db_data:/var/lib/postgresql/data
-    networks:
-      - sysacad_net
-
   gestion:
     build:
       context: ../microservicios/microservicio_gestion
@@ -29,18 +9,6 @@ services:
     environment:
       FLASK_ENV: ${GESTION_FLASK_ENV}
       GESTION_SECRET_KEY: ${GESTION_SECRET_KEY}
-      GESTION_DEV_DATABASE_URI: ${GESTION_DEV_DATABASE_URI}
-      GESTION_TEST_DATABASE_URI: ${GESTION_TEST_DATABASE_URI}
-      GESTION_DATABASE_URI: ${GESTION_DATABASE_URI}
-      REDIS_HOST: gestion-redis
-      REDIS_PORT: ${GESTION_REDIS_PORT}
-      REDIS_DB: ${GESTION_REDIS_DB}
-      REDIS_PASSWORD: ${GESTION_REDIS_PASSWORD}
-      REDIS_URL: redis://gestion-redis:${GESTION_REDIS_PASSWORD}@gestion-redis:${GESTION_REDIS_PORT}/${GESTION_REDIS_DB}
-      GESTION_REDIS_URL: redis://:${GESTION_REDIS_PASSWORD}@gestion-redis:${GESTION_REDIS_PORT}/${GESTION_REDIS_DB}
-    depends_on:
-      - gestion-redis
-      - gestion-db
     restart: unless-stopped
     networks:
       - sysacad_net
@@ -50,6 +18,13 @@ services:
       - "traefik.http.routers.gestion.rule=Host(`${GESTION_HOST}`)"
       - "traefik.http.routers.gestion.entrypoints=${TRAEFIK_ENTRYPOINT}"
       - "traefik.http.services.gestion.loadbalancer.server.port=5000"
+      # Patron Circuit Breaker
+      - "traefik.http.middlewares.academica-service.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 100"
+      - "traefik.http.middlewares.academica-service.circuitbreaker.expression=ResponseCodeRatio(500, 600, 0, 600) > 0.25"
+      - "traefik.http.middlewares.academica-service.circuitbreaker.expression=NetworkErrorRatio() > 0.5"
+      - "traefik.http.middlewares.academica-service.retry.attempts=4"
+      - "traefik.http.middlewares.academica-service.retry.initialinterval=100ms"            
+      - "traefik.docker.network=mired" 
     deploy:
       replicas: 2
 
@@ -172,11 +147,11 @@ services:
 
 networks:
   sysacad_net:
-    driver: bridge
+    external: true
+    name: mired
   traefik:
     external: true
 
 volumes:
-  gestion_db_data:
   alumno_db_data:
   documentacion_db_data:

@@ -1,26 +1,19 @@
-# Microservicio de Gestión Académica
+# Microservicio de Especialidades (mock)
 
-Microservicio Flask responsable de la gestión académica (programas, módulos, cohortes y asignaciones docentes) dentro del ecosistema SYSACAD. Trabaja en conjunto con `microservicio_alumno` (alta/baja de estudiantes) y `microservicio_documentacion` (certificados y documentación oficial) exponiendo APIs REST que los demás servicios consumen para saber **qué** se dicta, **cuándo** y **con quién**.
-
-## Características principales
-
-- CRUD de programas académicos con versionado, modalidad y estado de vigencia.
-- Gestión de módulos (asignaturas cortas) asociados a cada programa.
-- Administración de cohortes con campus/modalidad, cupos y estado de planificación.
-- Registro de docentes externos e internos, con especialidad y disponibilidad.
-- Asignación de docentes a módulos/cohortes con control de horas semanales.
-- Identificadores públicos idénticos a los IDs reales para alinear los contratos con el resto de los servicios.
-- Validación de payloads con Marshmallow + decorador `validate_with`.
-- Arquitectura por capas (Resources → Services → Repositories → Models) lista para escalar.
+Microservicio Flask reducido a un catálogo simulado de especialidades. No usa base de datos ni Redis; sólo expone un endpoint para listar especialidades y otro para obtener el detalle por ID, más el healthcheck.
 
 ## Stack
 
 | Capa | Tecnología |
 | ---- | ---------- |
 | Framework | Flask 3 + Blueprints |
-| Persistencia | SQLAlchemy + Flask-Migrate |
-| Validación | Marshmallow |
+| Persistencia | No aplica (mock en memoria) |
 | Contenedor | Python 3.11 slim + Gunicorn |
+
+## Dependencias
+
+- Se gestionan con `uv` y el `pyproject.toml` (no se usa `requirements.txt`).
+- En local podés crear un entorno con `uv venv .venv` y activarlo; luego `uv pip install --system flask gunicorn` o `uv sync` si preferís.
 
 ## Estructura de carpetas
 
@@ -51,12 +44,8 @@ microservicios/microservicio_gestion/
    .venv\Scripts\activate
    pip install -r requirements.txt
    ```
-3. Duplicar `.env.example` como `.env` y actualizar credenciales/URIs.
-4. Crear base y correr migraciones (una vez que agregues `flask db init/migrate`):
-   ```powershell
-   flask db upgrade
-   ```
-5. Levantar el servicio:
+3. Duplicar `.env.example` como `.env` y completar `GESTION_SECRET_KEY` (lo usa Flask).
+4. Levantar el servicio:
    ```powershell
    flask run --port 5002
    ```
@@ -78,14 +67,8 @@ microservicios/microservicio_gestion/
 | Método | Ruta | Descripción |
 | ------ | ---- | ----------- |
 | GET | `/status` | Healthcheck |
-| GET/POST | `/programas` | Listar/crear programas |
-| GET/PUT/DELETE | `/programas/<id>` | Obtener/editar/borrar programa |
-| GET/POST | `/programas/<id>/modulos` | Listar o crear módulos de un programa |
-| GET | `/cohortes?programa=<id>&estado=abierta` | Cohortes filtradas |
-| POST | `/cohortes` | Crear nueva cohorte |
-| POST | `/cohortes/<id>/docentes` | Asignar docente a módulo + cohorte |
-| CRUD | `/docentes` | Alta/baja/modificación de docentes |
-| GET | `/integraciones/documentacion/status` | Consulta resiliente al MS de documentación |
+| GET | `/especialidades` | Catálogo mock de especialidades |
+| GET | `/especialidades/<id>` | Detalle mock de una especialidad |
 
 > Todos los cuerpos aceptan/retornan JSON y validan estructura mediante Marshmallow. Los listados soportan filtros opcionales (`vigente`, `programa`, `estado`, `especialidad`).
 
@@ -106,25 +89,17 @@ microservicios/microservicio_gestion/
 
 ## Resiliencia operativa
 
-- **Caching + rate limiting**: El endpoint más consultado (`GET /api/v1/programas`) usa `Flask-Caching` respaldado en Redis y `Flask-Limiter`. Esto justifica la presencia de Redis aunque el microservicio gestione programas: la lista de planes académicos es la fuente más leída por el resto del ecosistema.
-- **Integración observable**: `GET /api/v1/integraciones/documentacion/status` expone el estado del microservicio de Documentación sin aplicar circuit breaker propio; las políticas de reintento/aislamiento ya las maneja Traefik a nivel plataforma.
-- **Configuración moldeable**: Los parámetros (Redis, límites, timeout del cliente externo) viven en el `.env` para ajustarlos por entorno sin tocar código.
+- No depende de Redis ni base de datos. Los datos están embebidos en memoria.
 
-## Pruebas automatizadas
+## Pruebas
 
-El microservicio cuenta con una batería de pruebas `pytest` que cubre:
-
-- Cliente HTTP hacia documentación ante respuestas exitosas y errores controlados.
-- Endpoint de integraciones para propagar el estado remoto.
-- Parsing de filtros y cacheo en `program_resource`.
-
-Ejecución recomendada desde la raíz del repo:
+Recomendado: probar manualmente con `curl` o similar:
 
 ```powershell
-python -m pytest microservicios/microservicio_gestion/tests
+curl http://localhost:5002/api/v1/status
+curl http://localhost:5002/api/v1/especialidades
+curl http://localhost:5002/api/v1/especialidades/1
 ```
-
-La `TestingConfig` utiliza `SimpleCache` y un backend de rate limiting en memoria, por lo que no es necesario tener Redis corriendo para los tests unitarios.
 
 ## Docker
 
@@ -170,9 +145,8 @@ Todos los servicios comparten la red `sysacad_net`, por lo que pueden comunicars
 
 ### Interacciones comunes
 
-- `microservicio_documentacion` consulta `GET /api/v1/programas` y `GET /api/v1/cohortes` para poblar certificados de cursado.
-- `microservicio_alumno` utiliza `GET /api/v1/programas/<id>` para validar que el plan elegido por un estudiante existe y está vigente.
-- Cualquier otro servicio puede verificar la salud de este microservicio accediendo a `GET /api/v1/status`.
+- Este microservicio ahora sólo entrega datos mock de especialidades. Útil para pruebas de front o integración simple.
+- Healthcheck disponible en `GET /api/v1/status`.
 
 ## Principios de código limpio aplicados
 

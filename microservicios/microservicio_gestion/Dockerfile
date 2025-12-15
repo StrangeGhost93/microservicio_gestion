@@ -12,8 +12,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar uv (gestor de dependencias) y dejarlo en PATH
-ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:/root/.cargo/bin:${PATH}"
 
 # Usuario no root
 RUN useradd --create-home --home /home/appuser --shell /bin/bash appuser

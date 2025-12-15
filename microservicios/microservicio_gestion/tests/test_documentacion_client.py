@@ -6,4 +6,3 @@ def test_especialidades_list(client):
     assert isinstance(data, list)
     assert len(data) > 0
     assert {"id", "especialidad", "facultad", "universidad"}.issubset(data[0].keys())
-        "_perform_get",

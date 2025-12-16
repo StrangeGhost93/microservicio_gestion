@@ -11,11 +11,25 @@ Sistema de gestión académica desarrollado en Python para la administración de
 
 ## ⚙️ Requerimientos Técnicos
 - Python 3.8 o superior
-- Dependencias: `pip install -r requirements.txt`
-- Base de datos SQLite (incluida)
+- Dependencias con `uv` (ej.: `uv pip install -r requirements.txt`)
+- Base de datos SQLite por defecto en local; el stack Docker usa PostgreSQL/Redis configurables por `.env`
 - Docker (opcional para despliegue)
 
 ## 🚀 Cómo Ejecutar el Proyecto
+1. Copiá las variables de ejemplo: `Copy-Item env-example .env`
+2. Elegí el contexto (development | testing | production): `$Env:FLASK_CONTEXT = "development"`
+3. Creá y activá el entorno virtual:
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+4. Instalá dependencias con uv: `uv pip install -r requirements.txt`
+5. Levantá la app monolito:
+   ```powershell
+   python app.py
+   # o
+   flask run --port 5000
+   ```
 
 ## Instalación
 
@@ -51,7 +65,7 @@ Sistema de gestión académica desarrollado en Python para la administración de
 
 4. Instalá las dependencias en el entorno virtual seleccionado:
    ```bash
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
 
 5. Ejecutá los tests para verificar que todo funciona correctamente:
@@ -91,8 +105,14 @@ python -m unittest test.test_facultad
 
 ### Gestión (mock de especialidades)
 - El código fuente vive dentro de `microservicios/microservicio_gestion` y ahora sólo expone `/api/v1/especialidades` y `/api/v1/especialidades/<id>` además del healthcheck.
-- Dependencias vía `uv` con `pyproject.toml` (no se usa `requirements.txt`).
-- Ejecución local: `cd microservicios/microservicio_gestion`, copiar `.env.example` a `.env`, crear env si querés (`uv venv .venv && .venv\Scripts\activate` en Windows) y `flask run --port 5002`.
+- Dependencias: usa `pyproject.toml` (sin requirements.txt). Opción simple con pip:
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2
+   ```
+   Si tenés `uv` global: `python -m uv venv .venv && .\.venv\Scripts\Activate.ps1 && python -m uv sync`.
+- Ejecución local: `cd microservicios/microservicio_gestion`, copiar `.env.example` a `.env`, instalar deps (arriba) y `flask run --port 5002`.
 - En Docker: `cd docker && cp .env-example .env && docker compose up gestion` (requiere red `mired` ya creada).
 
 ### Levantar todo el ecosistema (Alumno + Documentación + Gestión)
@@ -124,4 +144,4 @@ python -m unittest test.test_facultad
    docker compose exec documentacion flask db upgrade
    docker compose exec documentacion python poblar_db.py   # Opcional, llena datos de ejemplo
    ```
-5. Probá la comunicación entre microservicios usando las URLs internas (`http://gestion:5000`, `http://alumno:8000`, `http://documentacion:5000`) o los puertos publicados hacia tu host.
+6. Probá la comunicación entre microservicios usando las URLs internas (`http://gestion:5000`, `http://alumno:8000`, `http://documentacion:5000`) o los puertos publicados hacia tu host.

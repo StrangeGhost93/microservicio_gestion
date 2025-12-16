@@ -12,8 +12,19 @@ Microservicio Flask reducido a un catálogo simulado de especialidades. No usa b
 
 ## Dependencias
 
-- Se gestionan con `uv` y el `pyproject.toml` (no se usa `requirements.txt`).
-- En local podés crear un entorno con `uv venv .venv` y activarlo; luego `uv pip install --system flask gunicorn` o `uv sync` si preferís.
+- Se gestionan con el `pyproject.toml` (no hay `requirements.txt`).
+- Opción simple (pip):
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2
+   ```
+- Opción con `uv` (si lo tenés global):
+   ```powershell
+   python -m uv venv .venv
+   .\.venv\Scripts\Activate.ps1
+   python -m uv sync
+   ```
 
 ## Estructura de carpetas
 
@@ -30,7 +41,6 @@ microservicios/microservicio_gestion/
 │   ├── resources/            # Endpoints Flask (Blueprints)
 │   └── validators/           # Decoradores reutilizables
 ├── app.py                    # Punto de entrada
-├── requirements.txt
 ├── Dockerfile
 └── README.md
 ```
@@ -38,11 +48,11 @@ microservicios/microservicio_gestion/
 ## Configuración
 
 1. Clonar el proyecto base y ubicarse en `microservicios/microservicio_gestion`.
-2. Crear entorno virtual e instalar dependencias:
+2. Crear entorno virtual e instalar dependencias (pip):
    ```powershell
    python -m venv .venv
    .venv\Scripts\activate
-   pip install -r requirements.txt
+   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2
    ```
 3. Duplicar `.env.example` como `.env` y completar `GESTION_SECRET_KEY` (lo usa Flask).
 4. Levantar el servicio:

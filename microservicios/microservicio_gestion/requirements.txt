@@ -1,1 +1,13 @@
-# Este archivo queda como placeholder. Usar `pyproject.toml` y `uv` para gestionar dependencias.
+Flask==3.1.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.1.0
+SQLAlchemy==2.0.40
+psycopg2==2.9.10
+psycopg[binary]
+python-dotenv==1.1.0
+marshmallow==3.21.2
+marshmallow-sqlalchemy==1.4.2
+flask-marshmallow==0.15.0
+weasyprint==61.0
+MarkupSafe==3.0.2
+gunicorn==21.2.0

@@ -7,6 +7,7 @@ Esta versión quedó reducida a un catálogo **mock** de especialidades para pru
 - GET /api/v1/status (health)
 - GET /api/v1/especialidades (lista fija)
 - GET /api/v1/especialidades/<id> (detalle)
+Nota: el código del monolito está presente (modelos/servicios/repos), pero estos endpoints siguen sirviendo datos en memoria.
 
 2. Arquitectura mínima
 ----------------------
@@ -25,8 +26,9 @@ Esta versión quedó reducida a un catálogo **mock** de especialidades para pru
 4. Docker (local y demo)
 ------------------------
 
-- Imagen: python:3.11-slim + Flask + Gunicorn; dependencias via `uv` (ver Dockerfile y pyproject).
-- Compose: servicio `gestion` sin DB/Redis. Red externa `mired`. Si querés exponer al host, agrega en `docker/docker-compose.yml` dentro de `gestion`:
+- Imagen: python:3.11-slim + Flask + Gunicorn; dependencias via `uv` (ver Dockerfile y requirements.txt). Entry: `gunicorn -b 0.0.0.0:5000 wsgi:app`.
+- Compose: servicio `gestion` sin DB/Redis. Redes externas `mired` y `traefik` ya creadas.
+  Si querés exponer al host, agrega en `docker/docker-compose.yml` dentro de `gestion`:
   ```yaml
   ports:
     - "5002:5000"
@@ -40,10 +42,13 @@ Esta versión quedó reducida a un catálogo **mock** de especialidades para pru
   - Probar desde host (si exponés el puerto):
     - `curl http://localhost:5002/api/v1/status`
     - `curl http://localhost:5002/api/v1/especialidades`
+  - Probar vía Traefik (sin exponer puertos): agrega en hosts `127.0.0.1 gestion.localhost` y ejecuta Traefik en la red `traefik`:
+    - `curl -H "Host: gestion.localhost" http://localhost/api/v1/status`
+    - `curl -H "Host: gestion.localhost" http://localhost/api/v1/especialidades`
 
 5. Resumen para el profe
 ------------------------
 
-- Microservicio simplificado: solo health y mock de especialidades en memoria.
-- Sin base de datos ni Redis; dependencias mínimas administradas con `uv`.
-- Docker listo para correr con `docker compose up -d gestion`; opcionalmente mapear puerto 5002:5000 para probar desde el host.
+- Microservicio simplificado: solo health y mock de especialidades en memoria (aunque existan módulos de modelos/repos).
+- Sin base de datos ni Redis en tiempo de ejecución de estos endpoints; dependencias administradas con `uv`.
+- Docker listo: `docker compose up -d gestion`; para host, mapear 5002:5000 o usar Traefik con `gestion.localhost`.

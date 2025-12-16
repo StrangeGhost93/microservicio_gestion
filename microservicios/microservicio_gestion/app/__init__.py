@@ -1,13 +1,37 @@
-from flask import Flask
+import logging
+import os
 
-from .resources import register_blueprints
+from flask import Flask
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+
+from app.config import config
+from app.resources import register_blueprints
+
+# Instancias globales de extensiones
+db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app() -> Flask:
+    """
+    Factory de la aplicación con DB, migraciones y blueprints de API.
+    """
+    app_context = os.getenv("FLASK_CONTEXT")
     app = Flask(__name__)
-    app.config["JSON_SORT_KEYS"] = False
+    f = config.factory(app_context if app_context else "development")
+    app.config.from_object(f)
+
+    # Conecta extensiones
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # Registrar blueprints (API + certificados)
     register_blueprints(app)
+
+    # Atajo para shell
+    @app.shell_context_processor
+    def ctx():
+        return {"app": app}
+
     return app
-
-
-app = create_app()

@@ -1,11 +1,9 @@
-"""Servicio en memoria para mockear especialidades."""
+"""Servicio mock en memoria para especialidades."""
 
 from __future__ import annotations
-
 from collections.abc import Sequence
 from typing import Mapping
 
-# Fuente liviana de datos sintéticos para simular la API pedida
 _ESPECIALIDADES: list[Mapping[str, object]] = [
     {"id": 1, "especialidad": "Ingenieria en Sistemas", "facultad": "Facultad de Ingenieria", "universidad": "UNL"},
     {"id": 2, "especialidad": "Administracion de Empresas", "facultad": "Ciencias Economicas", "universidad": "UBA"},
@@ -19,14 +17,10 @@ _ESPECIALIDADES: list[Mapping[str, object]] = [
 
 
 class EspecialidadService:
-    """Fachada sin estado para especialidades mockeadas."""
-
     @staticmethod
     def listar() -> Sequence[Mapping[str, object]]:
-        """Devolver todas las especialidades disponibles."""
         return _ESPECIALIDADES
 
     @staticmethod
     def obtener(especialidad_id: int) -> Mapping[str, object] | None:
-        """Buscar una especialidad por ID dentro del mock."""
         return next((esp for esp in _ESPECIALIDADES if esp["id"] == especialidad_id), None)

@@ -1,4 +1,4 @@
-"""Blueprint minimal para mockear especialidades sin persistencia."""
+"""Endpoints CRUD mínimos para especialidades mock."""
 
 from flask import Blueprint, jsonify
 
@@ -9,14 +9,12 @@ especialidad_bp = Blueprint("especialidades", __name__)
 
 @especialidad_bp.get("/especialidades")
 def listar_especialidades():
-    """Retornar el catálogo mock de especialidades."""
     especialidades = EspecialidadService.listar()
     return jsonify(especialidades), 200
 
 
 @especialidad_bp.get("/especialidades/<int:especialidad_id>")
 def obtener_especialidad(especialidad_id: int):
-    """Obtener una especialidad puntual o 404 si no existe en el mock."""
     especialidad = EspecialidadService.obtener(especialidad_id)
     if not especialidad:
         return jsonify({"message": "Especialidad no encontrada"}), 404

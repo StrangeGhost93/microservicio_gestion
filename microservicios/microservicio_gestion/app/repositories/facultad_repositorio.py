@@ -14,6 +14,7 @@ class FacultadRepository:
         """
         db.session.add(facultad)
         db.session.commit()
+        return facultad
         
     @staticmethod
     def buscar_por_id(id: int):
@@ -43,6 +44,7 @@ class FacultadRepository:
         facultad_existente = db.session.merge(facultad)
         if not facultad_existente:
             return None
+        db.session.commit()
         return facultad_existente
     
     @staticmethod

@@ -14,7 +14,7 @@ class FacultadService:
         :param facultad: Objeto Facultad a crear.
         :return: Objeto Facultad creado.
         """
-        FacultadRepository.crear(facultad)
+        return FacultadRepository.crear(facultad)
     
     @staticmethod
     def buscar_por_id(id: int) -> Optional[Facultad]:
@@ -44,16 +44,11 @@ class FacultadService:
         facultad_existente = FacultadRepository.buscar_por_id(id)
         if not facultad_existente:
             return None
-        facultad_existente.nombre = facultad.nombre
-        facultad_existente.abreviatura = facultad.abreviatura
-        facultad_existente.directorio = facultad.directorio
-        facultad_existente.sigla = facultad.sigla
-        facultad_existente.codigo_postal = facultad.codigo_postal
-        facultad_existente.ciudad = facultad.ciudad
-        facultad_existente.domicilio = facultad.domicilio
-        facultad_existente.telefono = facultad.telefono
-        facultad_existente.contacto = facultad.contacto
-        return facultad_existente
+        for attr, value in facultad.__dict__.items():
+            if attr.startswith('_'):
+                continue
+            setattr(facultad_existente, attr, value)
+        return FacultadRepository.actualizar_facultad(facultad_existente)
         
     @staticmethod
     def borrar_por_id(id: int) -> Optional[Facultad]:

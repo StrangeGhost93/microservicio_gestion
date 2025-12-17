@@ -7,9 +7,14 @@ services:
     env_file:
       - .env
     environment:
-      FLASK_ENV: ${GESTION_FLASK_ENV}
+      FLASK_CONTEXT: ${GESTION_FLASK_CONTEXT}
       GESTION_SECRET_KEY: ${GESTION_SECRET_KEY}
+      DEV_DATABASE_URI: ${GESTION_DEV_DATABASE_URI}
+      TEST_DATABASE_URI: ${GESTION_TEST_DATABASE_URI}
+      PROD_DATABASE_URI: ${GESTION_PROD_DATABASE_URI}
     restart: unless-stopped
+    depends_on:
+      - gestion-db
     networks:
       - sysacad_net
       - traefik
@@ -27,6 +32,17 @@ services:
       - "traefik.docker.network=mired" 
     deploy:
       replicas: 2
+
+  gestion-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${GESTION_DB_NAME}
+      POSTGRES_USER: ${GESTION_DB_USER}
+      POSTGRES_PASSWORD: ${GESTION_DB_PASSWORD}
+    volumes:
+      - gestion_db_data:/var/lib/postgresql/data
+    networks:
+      - sysacad_net
 
   alumno-db:
     image: postgres:16-alpine
@@ -155,3 +171,4 @@ networks:
 volumes:
   alumno_db_data:
   documentacion_db_data:
+  gestion_db_data:

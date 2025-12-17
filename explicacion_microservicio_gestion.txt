@@ -1,63 +1,60 @@
-Título: Explicación del microservicio de Gestión (mock de especialidades)
+Título: Explicación del microservicio de Gestión (especialidades + Postgres)
 
 1. De qué va el microservicio
------------------------------
+------------------------------
 
-Esta versión quedó reducida a un catálogo **mock** de especialidades para pruebas. No usa base de datos ni Redis. Expone:
+Catálogo de especialidades respaldado por base de datos. Expone:
 - GET /api/v1/status (health)
-- GET /api/v1/especialidades (lista fija)
-- GET /api/v1/especialidades/<id> (detalle)
-Nota: el código del monolito está presente (modelos/servicios/repos), pero estos endpoints siguen sirviendo datos en memoria.
+- GET /api/v1/especialidades (listado desde DB)
+- GET /api/v1/especialidades/<id> (detalle por ID)
 
 2. Arquitectura mínima
 ----------------------
 
 - resources/: endpoints HTTP.
-- services/: lógica mínima en memoria (lista fija de especialidades).
-- No hay repositories/schemas/validators ni modelos.
+- services/: lógica de negocio mínima.
+- repositories/: acceso a datos con SQLAlchemy.
+- models/: mapeos ORM (tabla `especialidades`).
 
 3. Endpoints clave
 ------------------
 
 - `/api/v1/status`: responde `{service: gestion, status: ok}`.
-- `/api/v1/especialidades`: devuelve un arreglo de especialidades mock (id, especialidad, facultad, universidad).
+- `/api/v1/especialidades`: devuelve un arreglo de especialidades (id, especialidad, facultad, universidad).
 - `/api/v1/especialidades/<id>`: devuelve una especialidad por id o 404 si no existe.
 
 4. Docker (local y demo)
 ------------------------
 
-- Imagen: python:3.11-slim + Flask + Gunicorn; dependencias via `uv` (ver Dockerfile y requirements.txt). Entry: `gunicorn -b 0.0.0.0:5000 wsgi:app`.
-- Compose: servicio `gestion` sin DB/Redis. Redes externas `mired` y `traefik` ya creadas.
-  Si querés exponer al host, agrega en `docker/docker-compose.yml` dentro de `gestion`:
+- Imagen: python:3.11-slim + Flask + Gunicorn; dependencias via `uv` (ver Dockerfile). Entry: `gunicorn -b 0.0.0.0:5000 wsgi:app`.
+- Compose: servicio `gestion` + `gestion-db` (Postgres). Redes externas `mired` y `traefik` ya creadas.
+  Para exponer al host, agrega en `docker/docker-compose.yml` dentro de `gestion`:
   ```yaml
   ports:
     - "5002:5000"
   ```
 - Comandos útiles:
   - Crear red (si no existe): `docker network create mired`
-  - Levantar solo gestión: `cd docker && docker compose up -d --build gestion`
+  - Levantar solo gestión: `cd docker && docker compose up -d --build gestion gestion-db`
+  - Migraciones: `docker compose exec gestion flask db upgrade`
   - Probar desde dentro del contenedor:
     - `docker compose exec gestion curl -s http://localhost:5000/api/v1/status`
     - `docker compose exec gestion curl -s http://localhost:5000/api/v1/especialidades`
   - Probar desde host (si exponés el puerto):
     - `curl http://localhost:5002/api/v1/status`
     - `curl http://localhost:5002/api/v1/especialidades`
-  - Probar vía Traefik (sin exponer puertos): agrega en hosts `127.0.0.1 gestion.localhost` y ejecuta Traefik en la red `traefik`:
-    - `curl -H "Host: gestion.localhost" http://localhost/api/v1/status`
-    - `curl -H "Host: gestion.localhost" http://localhost/api/v1/especialidades`
+  - Probar vía Traefik (sin exponer puertos): agregar en hosts `127.0.0.1 gestion.localhost` y usar `curl -H "Host: gestion.localhost" http://localhost/api/v1/status`.
 
 5. Resumen para el profe
 ------------------------
 
-- Microservicio simplificado: solo health y mock de especialidades en memoria (aunque existan módulos de modelos/repos).
-- Sin base de datos ni Redis en tiempo de ejecución de estos endpoints; dependencias administradas con `uv`.
-- Docker listo: `docker compose up -d gestion`; para host, mapear 5002:5000 o usar Traefik con `gestion.localhost`.
+- Microservicio con DB Postgres; en pruebas usa SQLite en memoria.
+- Healthcheck y endpoints de listado/detalle de especialidades.
+- Docker listo: `docker compose up -d gestion gestion-db`; migraciones con `flask db upgrade` dentro del contenedor.
 
 6. Contexto del monolito original (Parcial 1)
---------------------------------------------
+---------------------------------------------
 
-- API REST completa en Flask con capas resource → service → repository → model y validación con Marshmallow (+ Hashids opcional).
+- API REST completa en Flask con capas resource → service → repository → model y validación con Marshmallow.
 - Config por `FLASK_CONTEXT` (testing/dev/prod) y DB vía SQLAlchemy + Flask-Migrate; variables DEV/TEST/PROD_DATABASE_URI.
-- Esquema CRUD por entidad (universidad, facultad, plan, materia, alumno, etc.) con prefijo `/api/v1` y validador de payloads.
-- Flujo típico: resource valida/serializa, service aplica reglas (chequea existencia), repository usa `db.session`, model mapea la tabla.
 - Migraciones: `flask db init/migrate/upgrade` para versionar esquema; tests en `test/` usan SQLite en memoria en modo testing.

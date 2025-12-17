@@ -103,17 +103,17 @@ python -m unittest test.test_facultad
 
 ## 🧩 Microservicios del proyecto
 
-### Gestión (mock de especialidades)
-- El código fuente vive dentro de `microservicios/microservicio_gestion` y ahora sólo expone `/api/v1/especialidades` y `/api/v1/especialidades/<id>` además del healthcheck.
-- Dependencias: usa `pyproject.toml` (sin requirements.txt). Opción simple con pip:
+### Gestión (especialidades con DB Postgres)
+- Código en `microservicios/microservicio_gestion`, expone `/api/v1/especialidades` y `/api/v1/especialidades/<id>` más healthcheck.
+- Dependencias gestionadas con `pyproject.toml`. Instalación rápida:
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2
+   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2 psycopg2-binary==2.9.9
    ```
-   Si tenés `uv` global: `python -m uv venv .venv && .\.venv\Scripts\Activate.ps1 && python -m uv sync`.
-- Ejecución local: `cd microservicios/microservicio_gestion`, copiar `.env.example` a `.env`, instalar deps (arriba) y `flask run --port 5002`.
-- En Docker: `cd docker && cp .env-example .env && docker compose up gestion` (requiere red `mired` ya creada).
+   Con uv: `python -m uv venv .venv && .\.venv\Scripts\Activate.ps1 && python -m uv sync`.
+- Ejecución local: `cd microservicios/microservicio_gestion`, copiar `.env.example` a `.env`, definir `FLASK_CONTEXT=development` y una `DEV_DATABASE_URI` (SQLite por defecto o Postgres). Luego `flask db upgrade` y `flask run --port 5002`.
+- En Docker: `cd docker && cp .env-example .env && docker compose up gestion gestion-db` (requiere red `mired`). Para exponer al host, agrega `ports: - "5002:5000"` en el servicio `gestion`.
 
 ### Levantar todo el ecosistema (Alumno + Documentación + Gestión)
 

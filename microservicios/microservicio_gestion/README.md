@@ -1,23 +1,23 @@
-# Microservicio de Especialidades (mock)
+# Microservicio de Especialidades (Flask + Postgres)
 
-Microservicio Flask reducido a un catálogo simulado de especialidades. No usa base de datos ni Redis; sólo expone un endpoint para listar especialidades y otro para obtener el detalle por ID, más el healthcheck.
+Catálogo de especialidades respaldado por Postgres con Flask + SQLAlchemy. Expone `/api/v1/especialidades` (listado) y `/api/v1/especialidades/<id>` (detalle), más healthcheck.
 
 ## Stack
 
 | Capa | Tecnología |
 | ---- | ---------- |
 | Framework | Flask 3 + Blueprints |
-| Persistencia | No aplica (mock en memoria) |
+| Persistencia | Postgres (SQLAlchemy + Flask-Migrate) |
 | Contenedor | Python 3.11 slim + Gunicorn |
 
 ## Dependencias
 
-- Se gestionan con el `pyproject.toml` (no hay `requirements.txt`).
+- Se gestionan con `pyproject.toml` (sin `requirements.txt`).
 - Opción simple (pip):
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2
+   python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2 psycopg2-binary==2.9.9
    ```
 - Opción con `uv` (si lo tenés global):
    ```powershell
@@ -54,9 +54,10 @@ microservicios/microservicio_gestion/
    .venv\Scripts\activate
    python -m pip install flask==3.0.2 flask-sqlalchemy==3.1.1 flask-migrate==4.0.7 python-dotenv==1.0.1 requests==2.32.3 pytest==9.0.2
    ```
-3. Duplicar `.env.example` como `.env` y completar `GESTION_SECRET_KEY` (lo usa Flask).
-4. Levantar el servicio:
+3. Duplicar `.env.example` como `.env` y completar `GESTION_SECRET_KEY` (lo usa Flask). Define también `FLASK_CONTEXT` (development/testing/production) y URIs de DB (`DEV/TEST/PROD_DATABASE_URI`).
+4. Ejecutar migraciones y levantar el servicio:
    ```powershell
+   flask db upgrade
    flask run --port 5002
    ```
 
@@ -64,11 +65,9 @@ microservicios/microservicio_gestion/
 
 | Variable | Uso |
 | -------- | --- |
-| `FLASK_ENV` | `development` / `production` |
-| `GESTION_*_DATABASE_URI` | URIs por entorno |
-| `GESTION_SECRET_KEY` | Firmado de sesiones JWT/CSRF |
-| `GESTION_REDIS_URL` | Cache + rate limiting (ej. `redis://localhost:6379/0`) |
-| `GESTION_RATE_LIMIT` | Límite por defecto de solicitudes (p. ej. `60 per minute`) |
+| `FLASK_CONTEXT` | `development` / `testing` / `production` |
+| `DEV/TEST/PROD_DATABASE_URI` | URIs por entorno (prefijo `GESTION_` en `.env` del docker compose) |
+| `GESTION_SECRET_KEY` | Firmado de sesiones |
 | `DOCUMENTACION_BASE_URL` | URL base para el microservicio de documentación |
 | `DOCUMENTACION_TIMEOUT` | Timeout (s) para las consultas HTTP hacia documentación |
 
@@ -77,29 +76,27 @@ microservicios/microservicio_gestion/
 | Método | Ruta | Descripción |
 | ------ | ---- | ----------- |
 | GET | `/status` | Healthcheck |
-| GET | `/especialidades` | Catálogo mock de especialidades |
-| GET | `/especialidades/<id>` | Detalle mock de una especialidad |
+| GET | `/especialidades` | Catálogo de especialidades (DB) |
+| GET | `/especialidades/<id>` | Detalle de una especialidad |
 
 > Todos los cuerpos aceptan/retornan JSON y validan estructura mediante Marshmallow. Los listados soportan filtros opcionales (`vigente`, `programa`, `estado`, `especialidad`).
 
 ## Flujo típico
 
-1. **Crear programa** → `POST /programas`.
-2. **Agregar módulos** → `POST /programas/<programaId>/modulos`.
-3. **Planificar cohorte** → `POST /cohortes` indicando programa, campus y cupo.
-4. **Registrar docentes** → `POST /docentes`.
-5. **Asignar docentes** → `POST /cohortes/<cohorteId>/docentes` con `docente_id`, `modulo_id` y horas.
+1. Crear DB y aplicar migraciones: `flask db upgrade` (usa el `FLASK_CONTEXT` actual).
+2. Poblar datos iniciales (opcional) con seeds vía repositorio o comandos personalizados.
+3. Consultar listados/detalles de especialidades desde `/api/v1/especialidades`.
 
 ## Extender el microservicio
 
 - Agrega migraciones y seeds en `/migrations` utilizando Flask-Migrate.
 - Suma autenticación (JWT u OIDC) envolviendo los blueprints con decoradores.
-- Implementa reportes agregados (horas planificadas por docente, ocupación de cohortes) en nuevos servicios/recursos.
+- Implementa reportes agregados en nuevos servicios/recursos.
 - Añade pruebas unitarias en `tests/` aprovechando la configuración `TestingConfig`.
 
 ## Resiliencia operativa
 
-- No depende de Redis ni base de datos. Los datos están embebidos en memoria.
+- Persistencia en Postgres; la configuración apunta a SQLite por defecto en desarrollo si no se definen URIs.
 
 ## Pruebas
 
@@ -155,13 +152,11 @@ Todos los servicios comparten la red `sysacad_net`, por lo que pueden comunicars
 
 ### Interacciones comunes
 
-- Este microservicio ahora sólo entrega datos mock de especialidades. Útil para pruebas de front o integración simple.
+- Usa Postgres en `docker-compose`; en local puede apuntar a SQLite si no configurás la URI.
 - Healthcheck disponible en `GET /api/v1/status`.
 
 ## Principios de código limpio aplicados
 
-- **Separación por capas**: Resources delegan en Services y éstos en Repositories; no mezclamos acceso a `request`, reglas de negocio y persistencia.
-- **Validaciones explícitas**: Todo payload pasa por `Marshmallow` + `validate_with`, evitando lógica defensiva repetida.
-- **Tipado y docstrings**: Los módulos incluyen anotaciones (`Mapping`, `Sequence`) y descripciones breves. Consulta `docs/CLEAN_CODE.md` para el checklist completo adoptado por el proyecto.
-- **Configuración controlada**: Variables en `.env` / `.env-example`, nunca hardcodeadas. Los valores compartidos (URIs, límites, secretos) viven en un solo archivo.
-- **Pruebas**: Prepara casos unitarios en `tests/` utilizando la `TestingConfig`. Antes de mergear corré `pytest` (o `python -m pytest`) y, si es relevante, `docker compose up --build` para validar la integración cruzada.
+- **Separación por capas**: Resources delegan en Services y éstos en Repositories.
+- **Configuración controlada**: Variables en `.env` / `.env-example`, nunca hardcodeadas.
+- **Pruebas**: Usa `TestingConfig` + SQLite en memoria para pruebas con `pytest`.

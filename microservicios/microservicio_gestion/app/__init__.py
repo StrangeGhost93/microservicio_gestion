@@ -24,6 +24,11 @@ def create_app() -> Flask:
 
     # Conecta extensiones
     db.init_app(app)
+
+    # Importa modelos para que Flask-Migrate detecte metadatos
+    with app.app_context():
+        from app.models.especialidad import Especialidad  # noqa: F401
+
     migrate.init_app(app, db)
 
     # Registrar blueprints (API + certificados)
@@ -32,6 +37,6 @@ def create_app() -> Flask:
     # Atajo para shell
     @app.shell_context_processor
     def ctx():
-        return {"app": app}
+        return {"app": app, "db": db}
 
     return app

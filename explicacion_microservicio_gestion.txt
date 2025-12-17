@@ -44,6 +44,54 @@ Catálogo de especialidades respaldado por base de datos. Expone:
     - `curl http://localhost:5002/api/v1/status`
     - `curl http://localhost:5002/api/v1/especialidades`
   - Probar vía Traefik (sin exponer puertos): agregar en hosts `127.0.0.1 gestion.localhost` y usar `curl -H "Host: gestion.localhost" http://localhost/api/v1/status`.
+1) cd "J:\proyecto de desarrollo\PAarcial 2\Gestion_Universidad-main\Parcial 2"; Test-Path docker/.env
+
+   Qué hace:
+   - Cambia el directorio de trabajo a la carpeta "Parcial 2".
+   - Verifica si existe el archivo docker/.env.
+--------------------------------------------------------
+
+2) docker network ls --format "{{.Name}}"
+   Qué hace:
+   - Lista todas las redes Docker existentes mostrando solo el nombre.
+
+   Para qué sirve:
+   - Verificar si la red necesaria para el proyecto ya está creada.
+   - Detectar posibles conflictos de red.
+
+   Resultado esperado:
+   - Lista de nombres de redes Docker.
+--------------------------------------------------------
+
+3) cd "J:\proyecto de desarrollo\PAarcial 2\Gestion_Universidad-main\Parcial 2\docker"; docker compose up -d --build gestion gestion-db
+   Qué hace:
+   - Cambia al directorio donde se encuentra docker-compose.yml.
+   - Levanta los servicios "gestion" y "gestion-db".
+   - Reconstruye las imágenes y ejecuta los contenedores en segundo plano.
+4) cd "J:\proyecto de desarrollo\PAarcial 2\Gestion_Universidad-main\Parcial 2\docker"; docker compose exec gestion curl -s http://localhost:5000/api/v1/status
+   Qué hace:
+   - Ejecuta un curl dentro del contenedor "gestion".
+   - Consulta el endpoint /status de la API.
+5) cd "J:\proyecto de desarrollo\PAarcial 2\Gestion_Universidad-main\Parcial 2\docker"; docker compose exec gestion curl -s http://localhost:5000/api/v1/especialidades
+
+   Qué hace:
+   - Consulta el endpoint /especialidades desde el contenedor.
+   Para qué sirve:
+   - Verificar acceso a la base de datos.
+   - Comprobar que existen registros o que el endpoint responde correctamente.
+
+   Resultado esperado:
+   - Lista de especialidades (JSON) o lista vacía sin errores.
+--------------------------------------------------------
+6) cd "J:\proyecto de desarrollo\PAarcial 2\Gestion_Universidad-main\Parcial 2\docker"; docker compose exec gestion curl -s -w "\nHTTP %{http_code}\n" http://localhost:5000/api/v1/especialidades/1
+   Qué hace:
+   - Consulta una especialidad por ID.
+   - Muestra el código de estado HTTP al final.
+   Para qué sirve:
+   - Validar el manejo de respuestas correctas y errores (404).
+   Resultado esperado:
+   - HTTP 200 si existe el registro.
+   - HTTP 404 si no existe.
 
 5. Resumen para el profe
 ------------------------

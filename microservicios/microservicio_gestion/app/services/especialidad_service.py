@@ -15,4 +15,4 @@ class EspecialidadService:
         return list(self.repository.list_all())
 
     def obtener(self, especialidad_id: int) -> Especialidad | None:
-        return Especialidad.query.get(especialidad_id)
+        return self.repository.get_by_id(especialidad_id)

@@ -11,6 +11,9 @@ class EspecialidadRepository:
         db.session.commit()
         return record
 
+    def get_by_id(self, especialidad_id: int) -> Especialidad | None:
+        return db.session.get(Especialidad, especialidad_id)
+
     def list_all(self) -> Iterable[Especialidad]:
         return Especialidad.query.all()
 

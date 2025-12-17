@@ -6,6 +6,7 @@ facultades_bp = Blueprint("facultades", __name__)
 
 
 @facultades_bp.route("/facultades/export", methods=["GET"])
+#rutas que reciben requests y delegan a servicios
 def export_facultades():
     fmt = request.args.get("format", "csv").lower()
     if fmt != "csv":

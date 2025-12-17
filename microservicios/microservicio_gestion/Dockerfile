@@ -27,6 +27,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:/root/.cargo/bin:${PATH}"
 
 # Usuario no root
+# usuario no-root en Docker para orquestación y seguridad 
 RUN useradd --create-home --home /home/appuser --shell /bin/bash appuser
 
 # Instalar dependencias del servicio

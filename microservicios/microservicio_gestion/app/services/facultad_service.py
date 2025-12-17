@@ -26,6 +26,7 @@ class FacultadService:
         return FacultadRepository.buscar_por_id(id)
     
     @staticmethod
+    #lógica de negocio en FacultadService, separada de la web y de la BD 
     def buscar_todos() -> list[Facultad]:
         """
         Busca todas las facultades en la base de datos.

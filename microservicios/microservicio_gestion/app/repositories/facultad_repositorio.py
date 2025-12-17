@@ -26,6 +26,7 @@ class FacultadRepository:
         return db.session.query(Facultad).filter_by(id=id).first()
     
     @staticmethod
+    #acceso a la BD encapsulado en FacultadRepository
     def buscar_todos():
         """
         Busca todas las facultades en la base de datos.

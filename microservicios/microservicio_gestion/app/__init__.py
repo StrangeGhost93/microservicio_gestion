@@ -17,6 +17,7 @@ def create_app() -> Flask:
     """
     Factory de la aplicación con DB, migraciones y blueprints de API.
     """
+    # app modular y testable con create_app() y registro de blueprints 
     app_context = os.getenv("FLASK_CONTEXT")
     app = Flask(__name__)
     f = config.factory(app_context if app_context else "development")

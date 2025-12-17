@@ -14,6 +14,7 @@ class FacultadRepository:
         """
         db.session.add(facultad)
         db.session.commit()
+        return facultad
         
     @staticmethod
     def buscar_por_id(id: int):
@@ -25,6 +26,7 @@ class FacultadRepository:
         return db.session.query(Facultad).filter_by(id=id).first()
     
     @staticmethod
+    #acceso a la BD encapsulado en FacultadRepository
     def buscar_todos():
         """
         Busca todas las facultades en la base de datos.
@@ -43,6 +45,7 @@ class FacultadRepository:
         facultad_existente = db.session.merge(facultad)
         if not facultad_existente:
             return None
+        db.session.commit()
         return facultad_existente
     
     @staticmethod
